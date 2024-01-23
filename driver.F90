@@ -72,7 +72,10 @@ program nekobench
   f3 = 1.0_rp
   
   !Benchmark copy speed f1 = f2
+  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
+  end if  
+  
   t0 = MPI_Wtime()
   do i = 1, niter
      if (NEKO_BCKND_DEVICE .eq. 1) then
@@ -81,7 +84,10 @@ program nekobench
         call copy(f1%x,f2%x,dm%size())
      end if
   end do
+
+  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
+  end if   
   t1 = MPI_Wtime()
 
   time = t1 - t0
@@ -99,7 +105,10 @@ program nekobench
   c1 = 1.0_rp
   c2 = 1.0_rp
   !Benchmark vector add f1 = c1*f2 + c2*f3
+  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
+  end if 
+
   t0 = MPI_Wtime()
   do i = 1, niter
      if (NEKO_BCKND_DEVICE .eq. 1) then
@@ -108,7 +117,11 @@ program nekobench
         call add3s2(f1%x,f2%x,f3%x,c1,c2,dm%size())
      end if
   end do
+  
+  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
+  end if 
+  
   t1 = MPI_Wtime()
   if (NEKO_BCKND_DEVICE .eq. 1) then
      norm_2 = device_glsc2(f1%x_d,f1%x_d,dm%size())
@@ -146,9 +159,16 @@ program nekobench
     write(*,*) 'check norm_1:', norm_1 
     write(*,*) 'check norm_2:', norm_2 
   end if 
+  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
+  end if 
+
   call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
+ 
+  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
+  end if
+
   norm_1 = device_glsc2(f1%x_d,f1%x_d,dm%size())
   norm_2 = device_glsc2(f2%x_d,f2%x_d,dm%size())
   
@@ -158,7 +178,11 @@ program nekobench
   do i = 1, niter
      call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
   end do  
+  
+  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
+  end if   
+
   t1 = MPI_Wtime()
   time = t1 - t0
 
