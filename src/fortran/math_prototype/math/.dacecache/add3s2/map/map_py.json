@@ -1,0 +1,189 @@
+{
+    "/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/math_dace.py": {
+        "18": [
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 0
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 1
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 2
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 3
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 4
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 5
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 6
+            }
+        ],
+        "19": [
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 7
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 8
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 9
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 10
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 11
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 12
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 13
+            }
+        ],
+        "15": [
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 7
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 8
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 9
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 10
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 11
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 12
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 13
+            }
+        ],
+        "16": [
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 7
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 8
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 9
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 10
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 11
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 12
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 13
+            }
+        ],
+        "17": [
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 7
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 8
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 9
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 10
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 11
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 12
+            },
+            {
+                "sdfg_id": 0,
+                "state_id": 0,
+                "node_id": 13
+            }
+        ]
+    }
+}

@@ -1,0 +1,60 @@
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_4a954/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_4a954.dir/build.make CMakeFiles/cmTC_4a954.dir/build
+gmake[1]: Entering directory '/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_4a954.dir/src.c.o
+/local/spack/linux-centos8-zen/gcc-8.5.0/gcc-11.3.0-lsrw3b6dbtevo63ogo6xhqdwcofcliio/bin/gcc -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_4a954.dir/src.c.o -c /scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_4a954
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_4a954.dir/link.txt --verbose=1
+/local/spack/linux-centos8-zen/gcc-8.5.0/gcc-11.3.0-lsrw3b6dbtevo63ogo6xhqdwcofcliio/bin/gcc CMakeFiles/cmTC_4a954.dir/src.c.o -o cmTC_4a954 
+CMakeFiles/cmTC_4a954.dir/src.c.o: In function `main':
+src.c:(.text+0x2d): undefined reference to `pthread_create'
+src.c:(.text+0x39): undefined reference to `pthread_detach'
+src.c:(.text+0x45): undefined reference to `pthread_cancel'
+src.c:(.text+0x56): undefined reference to `pthread_join'
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_4a954.dir/build.make:99: cmTC_4a954] Error 1
+gmake[1]: Leaving directory '/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/build/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:127: cmTC_4a954/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+static void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_cancel(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_fb272/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_fb272.dir/build.make CMakeFiles/cmTC_fb272.dir/build
+gmake[1]: Entering directory '/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_fb272.dir/CheckFunctionExists.c.o
+/local/spack/linux-centos8-zen/gcc-8.5.0/gcc-11.3.0-lsrw3b6dbtevo63ogo6xhqdwcofcliio/bin/gcc   -DCHECK_FUNCTION_EXISTS=pthread_create -o CMakeFiles/cmTC_fb272.dir/CheckFunctionExists.c.o -c /usr/share/cmake/Modules/CheckFunctionExists.c
+Linking C executable cmTC_fb272
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_fb272.dir/link.txt --verbose=1
+/local/spack/linux-centos8-zen/gcc-8.5.0/gcc-11.3.0-lsrw3b6dbtevo63ogo6xhqdwcofcliio/bin/gcc  -DCHECK_FUNCTION_EXISTS=pthread_create CMakeFiles/cmTC_fb272.dir/CheckFunctionExists.c.o -o cmTC_fb272  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+gmake[1]: *** [CMakeFiles/cmTC_fb272.dir/build.make:99: cmTC_fb272] Error 1
+gmake[1]: Leaving directory '/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/build/CMakeFiles/CMakeTmp'
+gmake: *** [Makefile:127: cmTC_fb272/fast] Error 2
+
+
+
