@@ -1,11 +1,7 @@
 program nekobench 
   use neko
-  ! dace use
-  use ax_helm_dace_fctry
-  use ax_helm_dace_device
-  !use ax_temp
-  ! end dace use 
-
+  use dace_ax_helm_fctry
+  use dace_ax_helm_device
   implicit none
 
   character(len=NEKO_FNAME_LEN) :: fname, lxchar
@@ -27,7 +23,7 @@ program nekobench
   ! dace var
   type(c_ptr) :: u_d, w_d
   type(c_ptr) :: dace_handle
-  class(ax_dace_t), allocatable :: ax_helm_dace
+  class(dace_ax_t), allocatable :: dace_ax_helm
   ! end dace var  
   argc = command_argument_count()
 
@@ -138,8 +134,8 @@ program nekobench
   f2 = 1.1_rp
   
   ! ax_dace 
-  call ax_helm_dace_factory(ax_helm_dace)
-  call ax_helm_dace%init(dace_handle, Xh%lx, msh%nelv)
+  call dace_ax_helm_factory(dace_ax_helm)
+  call dace_ax_helm%init(dace_handle, Xh%lx, msh%nelv)
   !dace_handle=dace_init(msh%nelv) ! dm%size()) !
 
 
@@ -151,7 +147,7 @@ program nekobench
     write(*,*) 'check norm_2:', norm_2 
   end if 
   call device_sync()
-  call ax_helm_dace%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
+  call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
   call device_sync()
   norm_1 = device_glsc2(f1%x_d,f1%x_d,dm%size())
   norm_2 = device_glsc2(f2%x_d,f2%x_d,dm%size())
@@ -160,7 +156,7 @@ program nekobench
  
   t0 = MPI_Wtime()
   do i = 1, niter
-     call ax_helm_dace%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
+     call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
   end do  
   call device_sync()
   t1 = MPI_Wtime()
@@ -181,7 +177,7 @@ program nekobench
      write(*,*) 'check norm_2:', norm_2 
   end if
 
-  call ax_helm_dace%delete(dace_handle)
+  call dace_ax_helm%delete(dace_handle)
   !call dace_delete(dace_handle) 
   call neko_finalize  
 
