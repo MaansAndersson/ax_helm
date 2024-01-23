@@ -330,7 +330,7 @@ if __name__ == "__main__":
     print('simplify()')
     ax_sdfg.simplify()
     print('GPU()')
-##    ax_sdfg.apply_gpu_transformations()
+    ax_sdfg.apply_gpu_transformations()
     #ax_sdfg.apply_transformations(MapReduceFusion)
     #ax_sdfg.apply_transformations(MapReduceFusion)
     #ax_sdfg.apply_transformations_repeated(MapExpansion) 

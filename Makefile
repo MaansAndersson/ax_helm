@@ -23,7 +23,7 @@ clean:
 	-rm -f *.o core *.core *.mod $(OBJ) $(DEST)
 
 $(DEST): mv_obj
-	$(FC) $(FCLAGS) ${OBJ} -o $@ $(LIBS) -I${AX_PATH}/include -L${AX_PATH}/build -l${lib} -ld_classic 
+	$(FC) $(FCLAGS) ${OBJ} -o $@ $(LIBS) -I${AX_PATH}/include -L${AX_PATH}/build -l${lib} 
 
 %.o: %.F90
 	${FC} ${FCLAGS} -c $<

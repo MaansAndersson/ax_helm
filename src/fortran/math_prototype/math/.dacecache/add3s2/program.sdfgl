@@ -1,2 +1,0 @@
-name,SDFG_intermediate,SDFG,source,argv_0
-add3s2,/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/.dacecache/add3s2/program.sdfg,/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/_dacegraphs/program.sdfg,/scratch/mansande/Plasma-PEPSC/neko/bench/nekobench/dace_wrapper/math/math_dace.py,math_dace.py
