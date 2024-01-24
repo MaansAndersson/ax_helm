@@ -30,8 +30,8 @@
 ! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ! POSSIBILITY OF SUCH DAMAGE.
 !
-module ax_helm_dace_device
-  use ax_product_dace
+module dace_ax_helm_device
+  use dace_ax_product
   use device_math, only : device_addcol4
   use device, only : device_get_ptr
   use num_types, only : rp, c_rp
@@ -40,32 +40,32 @@ module ax_helm_dace_device
   implicit none
   private
 
-  type, public, extends(ax_dace_t) :: ax_helm_dace_device_t
+  type, public, extends(dace_ax_t) :: dace_ax_helm_device_t
    contains
-     procedure, nopass :: compute => ax_helm_dace_device_compute 
-     procedure, nopass :: init => ax_helm_dace_device_init 
-     procedure, nopass :: delete => ax_helm_dace_device_delete
-  end type ax_helm_dace_device_t
+     procedure, nopass :: compute => dace_ax_helm_device_compute 
+     procedure, nopass :: init => dace_ax_helm_device_init 
+     procedure, nopass :: delete => dace_ax_helm_device_delete
+  end type dace_ax_helm_device_t
 
    interface  
-     type(c_ptr) function ax_dace_init(LX, NE) &
+     type(c_ptr) function dace_ax_init(LX, NE) &
              bind(c, name='__dace_init_ax')  
              use, intrinsic :: iso_c_binding
              type(c_ptr) :: handle
              integer(c_int) :: LX, NE 
-     end function ax_dace_init
+     end function dace_ax_init
    end interface
 
    interface 
-     subroutine ax_helm_dace_device_delete(handle) & 
+     subroutine dace_ax_helm_device_delete(handle) & 
              bind(c, name='__dace_exit_ax') 
              use, intrinsic :: iso_c_binding 
              type(c_ptr), value :: handle
-     end subroutine ax_helm_dace_device_delete
+     end subroutine dace_ax_helm_device_delete
    end interface
 
    interface
-     subroutine ax_helm_dace_device_evaluate(handle, &
+     subroutine dace_ax_helm_device_evaluate(handle, &
           dx_d, dxt_d, dy_d, dyt_d, dz_d, dzt_d, &
           g11_d, g12_d, g13_d, g22_d, g23_d, g33_d, &
           h1_d, u_d, w_d, lx, ne) &
@@ -77,11 +77,11 @@ module ax_helm_dace_device
        type(c_ptr), value :: dxt_d, dyt_d, dzt_d
        type(c_ptr), value :: h1_d, g11_d, g22_d, g33_d, g12_d, g13_d, g23_d
        integer(c_int), value :: NE, LX
-     end subroutine ax_helm_dace_device_evaluate
+     end subroutine dace_ax_helm_device_evaluate
   end interface
 
 contains
-  subroutine ax_helm_dace_device_compute(handle, w, u, coef, msh, Xh)
+  subroutine dace_ax_helm_device_compute(handle, w, u, coef, msh, Xh)
     type(c_ptr),   intent(inout) :: handle
     type(mesh_t),  intent(inout) :: msh
     type(space_t), intent(inout) :: Xh
@@ -95,7 +95,7 @@ contains
     u_d = device_get_ptr(u)
     w_d = device_get_ptr(w)
 
-    call ax_helm_dace_device_evaluate(handle, &
+    call dace_ax_helm_device_evaluate(handle, &
          Xh%dx_d, Xh%dxt_d, &
          Xh%dy_d, Xh%dyt_d, &
          Xh%dz_d, Xh%dzt_d, &
@@ -107,12 +107,12 @@ contains
        call device_addcol4(w_d ,coef%h2_d, coef%B_d, u_d, coef%dof%size())
     end if
     
-  end subroutine ax_helm_dace_device_compute
+  end subroutine dace_ax_helm_device_compute
   
-  subroutine ax_helm_dace_device_init(handle, lx, ne)
+  subroutine dace_ax_helm_device_init(handle, lx, ne)
         type(c_ptr), intent(inout) :: handle
         integer :: lx, ne 
-        handle = ax_dace_init(lx, ne)  
-  end subroutine ax_helm_dace_device_init
+        handle = dace_ax_init(lx, ne)  
+  end subroutine dace_ax_helm_device_init
 
-end module ax_helm_dace_device
+end module dace_ax_helm_device

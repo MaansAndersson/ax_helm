@@ -1,7 +1,9 @@
 program nekobench 
   use neko
-  use dace_ax_helm_fctry
-  use dace_ax_helm_device
+  ! dace use
+  use dace_math
+  ! end dace use 
+
   implicit none
 
   character(len=NEKO_FNAME_LEN) :: fname, lxchar
@@ -17,13 +19,12 @@ program nekobench
   real(kind=rp) :: c1, c2
   integer :: argc, niter, ierr, lx, nelt
   integer :: i
-  real(kind=rp) :: norm_1
   real(kind=rp) :: norm_2
 
   ! dace var
-  type(c_ptr) :: u_d, w_d
+  !type(dace_handle_t) :: dace_handle
   type(c_ptr) :: dace_handle
-  class(dace_ax_t), allocatable :: dace_ax_helm
+  !class(ax_dace_t), allocatable :: ax_helm_dace
   ! end dace var  
   argc = command_argument_count()
 
@@ -72,10 +73,7 @@ program nekobench
   f3 = 1.0_rp
   
   !Benchmark copy speed f1 = f2
-  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
-  end if  
-  
   t0 = MPI_Wtime()
   do i = 1, niter
      if (NEKO_BCKND_DEVICE .eq. 1) then
@@ -84,10 +82,7 @@ program nekobench
         call copy(f1%x,f2%x,dm%size())
      end if
   end do
-
-  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
-  end if   
   t1 = MPI_Wtime()
 
   time = t1 - t0
@@ -105,23 +100,24 @@ program nekobench
   c1 = 1.0_rp
   c2 = 1.0_rp
   !Benchmark vector add f1 = c1*f2 + c2*f3
-  if (NEKO_BCKND_DEVICE .eq. 1) then 
-  call device_sync()
-  end if 
 
+  dace_handle = hidden__dace_add3s2_init(dm%size())
+
+  call device_sync()
+  write (*,*) 'handle fixed'
   t0 = MPI_Wtime()
   do i = 1, niter
      if (NEKO_BCKND_DEVICE .eq. 1) then
-        call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+        !call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+        call dace_device_add3s2(dace_handle,f1%x_d,f2%x_d,f3%x_d,dm%size(),c1,c2)
     else
         call add3s2(f1%x,f2%x,f3%x,c1,c2,dm%size())
      end if
   end do
   
-  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
-  end if 
-  
+
+  !call device_sync()
   t1 = MPI_Wtime()
   if (NEKO_BCKND_DEVICE .eq. 1) then
      norm_2 = device_glsc2(f1%x_d,f1%x_d,dm%size())
@@ -143,66 +139,7 @@ program nekobench
      write(*,*) 'check norm_2:', norm_2 
   end if
 
-  f1 = 1.5_rp
-  f2 = 1.1_rp
-  
-  ! ax_dace 
-  call dace_ax_helm_factory(dace_ax_helm)
-  call dace_ax_helm%init(dace_handle, Xh%lx, msh%nelv)
-  !dace_handle=dace_init(msh%nelv) ! dm%size()) !
-
-
-  norm_1 = device_glsc2(f1%x_d,f1%x_d,dm%size())
-  norm_2 = device_glsc2(f2%x_d,f2%x_d,dm%size()) 
-  if (pe_rank .eq. 0) then
-    write(*,*) '______________________ '
-    write(*,*) 'check norm_1:', norm_1 
-    write(*,*) 'check norm_2:', norm_2 
-  end if 
-  if (NEKO_BCKND_DEVICE .eq. 1) then
-  call device_sync()
-  end if 
-
-  call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
- 
-  if (NEKO_BCKND_DEVICE .eq. 1) then
-  call device_sync()
-  end if
-
-  norm_1 = device_glsc2(f1%x_d,f1%x_d,dm%size())
-  norm_2 = device_glsc2(f2%x_d,f2%x_d,dm%size())
-  
-
- 
-  t0 = MPI_Wtime()
-  do i = 1, niter
-     call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
-  end do  
-  
-  if (NEKO_BCKND_DEVICE .eq. 1) then
-  call device_sync()
-  end if   
-
-  t1 = MPI_Wtime()
-  time = t1 - t0
-
-  flop = (19d0 + 12d0*Xh%lx)*n_tot*1e-9
-  
-  !Assume double precision
-  byte = n_tot*8d0*8d0*1e-9
-  if (pe_rank .eq. 0) then
-     write(*,*) 'Ax_helm Time:',time
-     write(*,*) 'Ax_helm GFlop:', flop
-     write(*,*) 'Ax_helm GByte:',byte
-     write(*,*) 'Ax_helm Gflop/s:', flop/time
-     write(*,*) 'Ax_helm GB/s:', byte/time
-     write(*,*) '______________________ '
-     write(*,*) 'check norm_1:', norm_1 
-     write(*,*) 'check norm_2:', norm_2 
-  end if
-
-  call dace_ax_helm%delete(dace_handle)
-  !call dace_delete(dace_handle) 
+  call dace_add3s2_delete(dace_handle)
   call neko_finalize  
 
 end program nekobench

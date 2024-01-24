@@ -30,24 +30,24 @@
 ! ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ! POSSIBILITY OF SUCH DAMAGE.
 !
-module ax_helm_dace_fctry
+module dace_ax_helm_fctry
   use neko_config
   use ax_product, only : ax_t
-  use ax_product_dace, only : ax_dace_t
   use ax_helm_device, only : ax_helm_device_t
   use ax_helm_xsmm, only : ax_helm_xsmm_t
   use ax_helm_sx, only : ax_helm_sx_t
   use ax_helm, only : ax_helm_t
-  use ax_helm_dace_device, only : ax_helm_dace_device_t
+  use dace_ax_product, only : dace_ax_t
+  use dace_ax_helm_device, only : dace_ax_helm_device_t
   implicit none
   private
 
-  public :: ax_helm_dace_factory, ax_dace_t
+  public :: dace_ax_helm_factory, dace_ax_t
 
 contains
 
-  subroutine ax_helm_dace_factory(Ax)
-    class(ax_dace_t), allocatable, intent(inout) :: Ax
+  subroutine dace_ax_helm_factory(Ax)
+    class(dace_ax_t), allocatable, intent(inout) :: Ax
     
     !write(*,*) 'In my Factory'
     if (allocated(Ax)) then
@@ -66,10 +66,10 @@ contains
     !   allocate(ax_helm_t::Ax)
     !else 
     !   write(*,*) 'In DaCe'
-       allocate(ax_helm_dace_device_t::Ax)
+       allocate(dace_ax_helm_device_t::Ax)
     !   write(*,*) 'Fin ax_helm_dace allocate'
     !end if 
     !write(*,*) 'Out my Factory'
-  end subroutine ax_helm_dace_factory
+  end subroutine dace_ax_helm_factory
 
-end module ax_helm_dace_fctry
+end module dace_ax_helm_fctry

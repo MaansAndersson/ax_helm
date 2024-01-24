@@ -31,9 +31,8 @@
 ! POSSIBILITY OF SUCH DAMAGE.
 !
 !> Defines a Matrix-vector product
-module ax_product_dace
+module dace_ax_product
   use num_types
-  !use dace_types
   use coefs
   use space
   use field
@@ -42,12 +41,12 @@ module ax_product_dace
   implicit none
 
   !> Base type for a matrix-vector product providing \f$ Ax \f$
-  type, abstract :: ax_dace_t
+  type, abstract :: dace_ax_t
    contains
      procedure(ax_compute), nopass, deferred :: compute
      procedure(ax_init),    nopass, deferred :: init
      procedure(ax_delete),  nopass, deferred :: delete
-  end type ax_dace_t
+  end type dace_ax_t
 
   !> Abstract interface for computing\f$ Ax \f$ inside a Krylov method
   !!
@@ -62,7 +61,7 @@ module ax_product_dace
        import space_t
        import mesh_t
        import coef_t
-       import ax_dace_t
+       import dace_ax_t
        import rp
        import c_ptr
        implicit none
@@ -102,4 +101,4 @@ module ax_product_dace
   end interface
 
 
-end module ax_product_dace
+end module dace_ax_product
