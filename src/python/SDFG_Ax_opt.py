@@ -68,15 +68,23 @@ def total_opt_pass(sdfg : dc.SDFG):
     exit = find_map_by_param(sdfg, 'k')
     exit.schedule = dc.ScheduleType.GPU_ThreadBlock
    
-    #smem_ttu = InLocalStorage.apply_to(sdfg, dict(array='ttmp'), node_a=entry, node_b=exit)
-    #smem_stu = InLocalStorage.apply_to(sdfg, dict(array='stmp'), node_a=entry, node_b=exit)
-    #smem_rtu = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
-    #smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
+    smem_tt = InLocalStorage.apply_to(sdfg, dict(array='ttmp'), node_a=entry, node_b=exit)
+    smem_st = InLocalStorage.apply_to(sdfg, dict(array='stmp'), node_a=entry, node_b=exit)
+    smem_rt = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
 
-#    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='dx_d'), node_a=entry, node_b=exit)
-#    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='dy_d'), node_a=entry, node_b=exit)
-#    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='dz_d'), node_a=entry, node_b=exit)
-  
+    smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
+
+    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='dx_d'), node_a=entry, node_b=exit)
+    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='dy_d'), node_a=entry, node_b=exit)
+    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='dz_d'), node_a=entry, node_b=exit)
+
+    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+
+    #smem_dy = InLocalStorage.apply_to(sdfg, dict(array='G0d'), node_a=entry, node_b=exit)
+    #smem_dz = InLocalStorage.apply_to(sdfg, dict(array='G0d'), node_a=entry, node_b=exit)
     #DoubleBuffering.apply_to(sdfg, map_entry=exit, transient=smem_dx)#
 
     #xfutil          -- Warps                      
@@ -95,10 +103,15 @@ def total_opt_pass(sdfg : dc.SDFG):
     exit = find_map_by_param(sdfg,'k2')
     exit.schedule = dc.ScheduleType.GPU_ThreadBlock
    
-#    smem_dtx = InLocalStorage.apply_to(sdfg, dict(array='dxt_d'), node_a=entry, node_b=exit)
-#    smem_dty = InLocalStorage.apply_to(sdfg, dict(array='dyt_d'), node_a=entry, node_b=exit)
-#    smem_dtz = InLocalStorage.apply_to(sdfg, dict(array='dzt_d'), node_a=entry, node_b=exit)
-
+    smem_dtx = InLocalStorage.apply_to(sdfg, dict(array='dxt_d'), node_a=entry, node_b=exit)
+    smem_dty = InLocalStorage.apply_to(sdfg, dict(array='dyt_d'), node_a=entry, node_b=exit)
+    smem_dtz = InLocalStorage.apply_to(sdfg, dict(array='dzt_d'), node_a=entry, node_b=exit)
+    smem_utt = InLocalStorage.apply_to(sdfg, dict(array='uttmp'), node_a=entry, node_b=exit)
+    smem_ust = InLocalStorage.apply_to(sdfg, dict(array='ustmp'), node_a=entry, node_b=exit)
+    smem_urt = InLocalStorage.apply_to(sdfg, dict(array='urtmp'), node_a=entry, node_b=exit)
+    #smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
+    #smem_w = InLocalStorage.apply_to(sdfg, dict(array='w_d'), node_a=entry, node_b=exit)
+     
 # sdfg.arrays[smem_b.data].storage = dace.StorageType.GPU_Shared
 #    arrays[aname].lifetime = dtypes.AllocationLifetime.Persistent
     #print(type(sdfg.arrays["stmp"])) #[stmp]) 

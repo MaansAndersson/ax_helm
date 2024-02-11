@@ -82,6 +82,7 @@ program nekobench
   ! Dace
   class(dace_ax_helm_device_t), allocatable :: dace_ax_helm
   type(c_ptr) :: handle_add3s2
+  type(field_t) :: stmp, rtmp, ttmp, urtmp, ustmp, uttmp !temporary  
   argc = command_argument_count()
 
   if ((argc .lt. 4) .or. (argc .gt. 4)) then
@@ -115,7 +116,6 @@ program nekobench
   call ax_helm_factory(ax_helm)
   
   allocate(dace_ax_helm)
-
 
   abstol = 1e-12 ! SOmething small so we dont converge
   call krylov_solver_factory(solver, dm%size(), 'cg', niter, abstol)
@@ -198,7 +198,24 @@ program nekobench
   end if
 
   call device_sync()
-  call dace_ax_helm_device_init(Xh%lx, msh%nelv)
+
+  call stmp%init(dm) 
+  call rtmp%init(dm) 
+  call ttmp%init(dm) 
+  call urtmp%init(dm)
+  call ustmp%init(dm)
+  call uttmp%init(dm)
+
+  stmp  = 0.0_rp
+  rtmp  = 0.0_rp
+  ttmp  = 0.0_rp
+  urtmp = 0.0_rp
+  ustmp = 0.0_rp
+  uttmp = 0.0_rp
+  
+  call device_sync()
+  
+  call dace_ax_helm_device_init(Xh%lx, msh%nelv, rtmp%x_d, stmp%x_d, ttmp%x_d, urtmp%x_d, ustmp%x_d, uttmp%x_d)
   call device_sync()
   call set_f(f1%x,f1%dof)
   if(NEKO_BCKND_DEVICE .eq. 1) call device_memcpy(f1%x, f1%x_d, n, HOST_TO_DEVICE,sync=.true.) 

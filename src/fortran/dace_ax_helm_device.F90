@@ -44,7 +44,7 @@ module dace_ax_helm_device
   use, intrinsic :: iso_c_binding, only : c_ptr, c_int
 
   implicit none
-  type(c_ptr) :: handle
+  type(c_ptr) :: handle, rtmp_d, stmp_d, ttmp_d, urtmp_d, ustmp_d, uttmp_d
 
   type, public, extends(ax_t) :: dace_ax_helm_device_t
    contains
@@ -74,7 +74,11 @@ module dace_ax_helm_device
      subroutine dace_ax_helm_device_evaluate(handle, &
           dx_d, dxt_d, dy_d, dyt_d, dz_d, dzt_d, &
           g11_d, g12_d, g13_d, g22_d, g23_d, g33_d, &
-          h1_d, u_d, w_d, lx, ne) &
+          h1_d, &
+          rtmp_d, stmp_d, ttmp_d, &
+          u_d, &
+          urtmp_d, ustmp_d, uttmp_d, &
+          w_d, lx, ne) &
           bind(c, name='__program_ax')
           use, intrinsic :: iso_c_binding
        import c_rp
@@ -82,6 +86,7 @@ module dace_ax_helm_device
        type(c_ptr), value :: w_d, u_d
        type(c_ptr), value :: dx_d, dy_d, dz_d
        type(c_ptr), value :: dxt_d, dyt_d, dzt_d
+       type(c_ptr), value :: rtmp_d, stmp_d, ttmp_d, urtmp_d, ustmp_d, uttmp_d
        type(c_ptr), value :: h1_d, g11_d, g22_d, g33_d, g12_d, g13_d, g23_d
        integer(c_int), value :: NE, LX
      end subroutine dace_ax_helm_device_evaluate
@@ -95,20 +100,23 @@ contains
     real(kind=rp), intent(inout) :: w(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
     real(kind=rp), intent(inout) :: u(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
     type(c_ptr) :: u_d, w_d !, handle 
-    
     !write(*,*) 'compute()'
     !handle = this%get_handle()
 
     u_d = device_get_ptr(u)
     w_d = device_get_ptr(w)
-
+   
     call dace_ax_helm_device_evaluate(handle, &
          Xh%dx_d, Xh%dxt_d, &
          Xh%dy_d, Xh%dyt_d, &
          Xh%dz_d, Xh%dzt_d, &
          coef%G11_d, coef%G12_d, coef%G13_d, &
          coef%G22_d, coef%G23_d, coef%G33_d, &
-         coef%h1_d, u_d, w_d, &
+         coef%h1_d, &
+         rtmp_d, stmp_d, ttmp_d, & 
+         u_d, &
+         urtmp_d, ustmp_d, uttmp_d, &
+         w_d, &
          Xh%lx,msh%nelv)
     if (coef%ifh2) then
        call device_addcol4(w_d ,coef%h2_d, coef%B_d, u_d, coef%dof%size())
@@ -116,11 +124,16 @@ contains
     
   end subroutine dace_ax_helm_device_compute
   
-  subroutine dace_ax_helm_device_init(lx, ne)
+  subroutine dace_ax_helm_device_init(lx, ne, rtmp_i, stmp_i, ttmp_i, urtmp_i, ustmp_i, uttmp_i)
+        type(c_ptr), intent(inout) :: rtmp_i, stmp_i, ttmp_i, urtmp_i, ustmp_i, uttmp_i  
         integer, intent(in) :: lx, ne 
-        print *, handle
+        rtmp_d =rtmp_i
+        stmp_d =stmp_i
+        ttmp_d =ttmp_i 
+        urtmp_d=urtmp_i
+        ustmp_d=ustmp_i
+        uttmp_d=uttmp_i
         handle = dace_ax_init(lx, ne)  
-        print *, handle, 'hey'
   end subroutine dace_ax_helm_device_init
 
   subroutine dace_ax_helm_device_free()

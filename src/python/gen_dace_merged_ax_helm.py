@@ -118,7 +118,7 @@ if __name__ == "__main__":
     
 
     #make_transients_persistent(ax_sdfg,dtypes.DeviceType.GPU,True) 
-#    total_opt_pass(ax_sdfg)
+    total_opt_pass(ax_sdfg)
     print('simplify()')
     #ax_sdfg.apply_transformations_repeated( TaskletFusion) 
     ax_sdfg.simplify()
