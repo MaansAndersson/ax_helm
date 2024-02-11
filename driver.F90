@@ -1,7 +1,64 @@
-program nekobench 
+module setup
   use neko
-  use dace_ax_helm_fctry
+  implicit none
+contains
+  ! Setup rhs
+  subroutine set_f(f, dm)
+    type(dofmap_t), intent(in) :: dm
+    real(kind=rp), intent(inout), dimension(dm%size()) :: f
+    integer :: n
+    real(kind=rp) :: dx, dy, dz
+    real(kind=rp), parameter :: arg = 2d0
+    integer :: i, idx(4)
+   
+    
+    do i = 1, dm%size()
+       idx = nonlinear_index(i, dm%Xh%lx, dm%Xh%ly, dm%Xh%lz)
+       dx = dm%x(idx(1), idx(2), idx(3), idx(4)) - 4.0d0
+       dy = dm%y(idx(1), idx(2), idx(3), idx(4)) - 4.0d0
+       dz = dm%z(idx(1), idx(2), idx(3), idx(4)) - 4.0d0
+       f(i) = 500d0*exp(-(dx**arg + dy**arg + dz**arg)/arg)
+    end do
+  end subroutine set_f
+
+  ! Set Dirichlet conditions
+  subroutine set_bc(bc_, msh)
+    type(mesh_t), intent(in) :: msh
+    type(dirichlet_t), intent(inout) :: bc_
+    integer :: i
+  
+    do i = 1, msh%nelv
+       if (msh%facet_neigh(1, i) .eq. 0) then
+         call bc_%mark_facet(1, i) 
+       end if
+       if (msh%facet_neigh(2, i) .eq. 0) then
+         call bc_%mark_facet(2, i) 
+       end if
+       if (msh%facet_neigh(3, i) .eq. 0) then
+         call bc_%mark_facet(3, i) 
+       end if
+       if (msh%facet_neigh(4, i) .eq. 0) then
+         call bc_%mark_facet(4, i) 
+       end if
+       if (msh%facet_neigh(5, i) .eq. 0) then
+         call bc_%mark_facet(5, i) 
+       end if
+       if (msh%facet_neigh(6, i) .eq. 0) then
+         call bc_%mark_facet(6, i) 
+       end if
+    enddo
+  end subroutine set_bc
+
+
+
+end module setup
+
+
+program nekobench
+  use neko
   use dace_ax_helm_device
+  use setup
+  use dace_math
   implicit none
 
   character(len=NEKO_FNAME_LEN) :: fname, lxchar
@@ -14,20 +71,22 @@ program nekobench
   class(ax_t), allocatable :: ax_helm
   type(field_t) :: f1, f2, f3, f4
   real(kind=rp) :: byte, flop, n_tot, t0, t1, time
-  real(kind=rp) :: c1, c2
-  integer :: argc, niter, ierr, lx, nelt
-  integer :: i, bcknd
-  real(kind=rp) :: norm_1, norm_2
-
-  ! dace var
-  type(c_ptr) :: u_d, w_d
-  type(c_ptr) :: dace_handle
-  class(dace_ax_t), allocatable :: dace_ax_helm
-  ! end dace var  
+  real(kind=rp) :: c1, c2, abstol
+  class(ksp_t), allocatable :: solver
+  type(ksp_monitor_t) :: ksp_mon
+  type(dirichlet_t) :: dir_bc
+  type(bc_list_t) :: bclst
+  integer :: argc, niter, ierr, lx, nelt, bcknd 
+  integer :: i, n
+    
+  ! Dace
+  class(dace_ax_helm_device_t), allocatable :: dace_ax_helm
+  type(c_ptr) :: handle_add3s2
   argc = command_argument_count()
 
   if ((argc .lt. 4) .or. (argc .gt. 4)) then
-     write(*,*) 'Usage: ./nekobench <neko mesh> <N> <niter> <dace=0,nodace>'
+     write(*,*) 'Usage: ./nekobench <neko mesh> <N> <niter> <bcknd (dace : 0)>'
+     write(*,*) 'Use meshes from nekbone, e.g. ../nekobone/data.512.nmsh'
      stop
   end if
   
@@ -38,12 +97,11 @@ program nekobench
   read(lxchar, *) lx
   call get_command_argument(3, lxchar)
   read(lxchar, *) niter
-  call get_command_argument(4, lxchar)
+  call get_command_argument(4, lxchar) 
   read(lxchar, *) bcknd 
 
   nmsh_file = file_t(fname)
   call nmsh_file%read(msh) 
-
   
   !Init things
   call Xh%init(GLL, lx, lx, lx)
@@ -55,8 +113,14 @@ program nekobench
   call f4%init(dm)
   call coef%init(gs_h)
   call ax_helm_factory(ax_helm)
-  n_tot = dble(msh%glb_nelv)*dble(niter)*dble(Xh%lxyz) 
+  
+  allocate(dace_ax_helm)
 
+
+  abstol = 1e-12 ! SOmething small so we dont converge
+  call krylov_solver_factory(solver, dm%size(), 'cg', niter, abstol)
+  n_tot = dble(msh%glb_nelv)*dble(niter)*dble(Xh%lxyz) 
+  n = dm%size()
   if (pe_rank .eq. 0) then
      write(*,*) 'Nekobench '
      write(*,*) 'lx:', lx
@@ -68,15 +132,12 @@ program nekobench
   call MPI_Barrier(NEKO_COMM, ierr)
 
 
-  !f1 = 1.0_rp
-  !f2 = 1.0_rp
-  !f3 = 1.0_rp
+  f1 = 1.0_rp
+  f2 = 1.0_rp
+  f3 = 1.0_rp
   
   !Benchmark copy speed f1 = f2
-  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
-  end if  
-  
   t0 = MPI_Wtime()
   do i = 1, niter
      if (NEKO_BCKND_DEVICE .eq. 1) then
@@ -85,10 +146,7 @@ program nekobench
         call copy(f1%x,f2%x,dm%size())
      end if
   end do
-
-  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
-  end if   
   t1 = MPI_Wtime()
 
   time = t1 - t0
@@ -105,30 +163,27 @@ program nekobench
   f3 = 1.0_rp
   c1 = 1.0_rp
   c2 = 1.0_rp
+  
+  call dace_add3s2_init(dm%size())
+  
   !Benchmark vector add f1 = c1*f2 + c2*f3
-  if (NEKO_BCKND_DEVICE .eq. 1) then 
   call device_sync()
-  end if 
-
+  call MPI_Barrier(NEKO_COMM, ierr)
   t0 = MPI_Wtime()
   do i = 1, niter
      if (NEKO_BCKND_DEVICE .eq. 1) then
-        call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+        if (bcknd .eq. 0) then
+          call dace_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+          if (i .eq. 1) print *, niter*0.25*device_glsc2(f1%x_d,f1%x_d,dm%size())
+        else 
+          call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+        end if 
     else
         call add3s2(f1%x,f2%x,f3%x,c1,c2,dm%size())
      end if
   end do
-  
-  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
-  end if 
-  
   t1 = MPI_Wtime()
-  if (NEKO_BCKND_DEVICE .eq. 1) then
-     norm_2 = device_glsc2(f1%x_d,f1%x_d,dm%size())
-  else
-     norm_2 = glsc2(f1%x,f1%x,dm%size())
-  end if
 
   time = t1 - t0
   !Assume double precision
@@ -139,64 +194,47 @@ program nekobench
      write(*,*) 'add3s2 GFlop:', flop
      write(*,*) 'add3s2 GByte:',byte
      write(*,*) 'add3s2 Gflop/s:', flop/time
-     write(*,*) 'add3s2 GB/s:', byte/time  
-     write(*,*) '______________________ '
-     write(*,*) 'check norm_2:', norm_2 
+     write(*,*) 'add3s2 GB/s:', byte/time
   end if
 
-  f1 = 1.5_rp
-  f2 = 1.1_rp
-  
-  ! ax_dace 
-  if (bcknd .eq. 0) then 
-        call dace_ax_helm_factory(dace_ax_helm)
-        call dace_ax_helm%init(dace_handle, Xh%lx, msh%nelv)
-  !dace_handle=dace_init(msh%nelv) ! dm%size()) !
-  end if
-
-  norm_1 = device_glsc2(f1%x_d,f1%x_d,dm%size())
-  norm_2 = device_glsc2(f2%x_d,f2%x_d,dm%size()) 
-  if (pe_rank .eq. 0) then
-    write(*,*) '______________________ '
-    write(*,*) 'check norm_1:', norm_1 
-    write(*,*) 'check norm_2:', norm_2 
-  end if 
-  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
-  end if 
-
-  if (bcknd .eq. 0) then 
-        call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
+  call dace_ax_helm_device_init(Xh%lx, msh%nelv)
+  call device_sync()
+  call set_f(f1%x,f1%dof)
+  if(NEKO_BCKND_DEVICE .eq. 1) call device_memcpy(f1%x, f1%x_d, n, HOST_TO_DEVICE,sync=.true.) 
+   
+  call device_sync()
+  !Benchmark Ax, lets not overengineer this...
+  ! To not time the autotune...
+  if (bcknd .eq. 0) then  
+     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
   else 
-        call ax_helm%compute(f2%x, f1%x, coef, msh, Xh) 
+     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
   end if
 
-
-  if (NEKO_BCKND_DEVICE .eq. 1) then
   call device_sync()
-  norm_1 = device_glsc2(f1%x_d,f1%x_d,dm%size())
-  norm_2 = device_glsc2(f2%x_d,f2%x_d,dm%size())
+  if (NEKO_BCKND_DEVICE .eq. 1) then
+     print *, "norm of ||A*f||, L2 norm squared", device_glsc2(f2%x_d,f2%x_d,n)
+  else
+     print *, "norm of ||A*f||, L2 norm squared", glsc2(f2%x,f2%x,n)
   end if
 
- 
+  call MPI_Barrier(NEKO_COMM, ierr)
   t0 = MPI_Wtime()
+  !h1, h2 are initialized to something
   do i = 1, niter
-  if (bcknd .eq. 0) then
-        call dace_ax_helm%compute(dace_handle, f2%x, f1%x, coef, msh, Xh) 
+  if (bcknd .eq. 0) then  
+     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
   else 
-        call ax_helm%compute(f2%x, f1%x, coef, msh, Xh) 
+     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
   end if
-  end do 
-  
-  if (NEKO_BCKND_DEVICE .eq. 1) then
+
+  end do
   call device_sync()
-  end if   
-
   t1 = MPI_Wtime()
-  time = t1 - t0
 
+  time = t1 - t0
   flop = (19d0 + 12d0*Xh%lx)*n_tot*1e-9
-  
   !Assume double precision
   byte = n_tot*8d0*8d0*1e-9
   if (pe_rank .eq. 0) then
@@ -205,15 +243,32 @@ program nekobench
      write(*,*) 'Ax_helm GByte:',byte
      write(*,*) 'Ax_helm Gflop/s:', flop/time
      write(*,*) 'Ax_helm GB/s:', byte/time
-     write(*,*) '______________________ '
-     write(*,*) 'check norm_1:', norm_1 
-     write(*,*) 'check norm_2:', norm_2 
   end if
+  !example us of cg solver
+  !init bcs...
+  call dir_bc%init(dm)
+  call dir_bc%set_g(real(0.0d0,rp))
+ 
+  !user specified
+  call set_bc(dir_bc, msh)
+ 
+  call dir_bc%finalize()
+  call bc_list_init(bclst)
+  call bc_list_add(bclst,dir_bc)
 
-  if (bcknd .eq. 0) then
-  call dace_ax_helm%delete(dace_handle)
-  !call dace_delete(dace_handle) 
+  if (bcknd .eq. 0) then  
+  ksp_mon = solver%solve(dace_ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
+  else 
+  ksp_mon = solver%solve(ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
   end if 
+
+  if (NEKO_BCKND_DEVICE .eq. 1) &
+     call device_memcpy(f2%x, f2%x_d, n, DEVICE_TO_HOST, sync=.true.)
+  ! Store the solution
+  fname = 'out.fld'
+  mf = file_t(fname)
+  call mf%write(f2)
+
   call neko_finalize  
 
 end program nekobench

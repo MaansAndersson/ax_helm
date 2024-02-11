@@ -3,6 +3,7 @@ import numpy as np
 #import cupy as cp
 
 
+from dace import config, data as dt, dtypes, Memlet, symbolic
 from dace.codegen.compiled_sdfg import CompiledSDFG
 from dace.sdfg.utils import load_precompiled_sdfg
 from dace.transformation.dataflow import (DoubleBuffering, MapCollapse, MapExpansion, MapReduceFusion, StripMining, InLocalStorage, AccumulateTransient, AugAssignToWCR, GPUTransformLocalStorage)
@@ -51,60 +52,32 @@ def transient_reuse():
 def total_opt_pass(sdfg : dc.SDFG):
     print('total opt pass') 
     m, n, k = 256, 256, 256
-    
-    entry = find_map_by_param(sdfg, 'e') # Entery for large parallel loop
-    divides_evenly = False #(m % 64 == 0) and (n % 64 == 0) and (k % 8 == 0)
-    xfutil.tile(sdfg, entry, divides_evenly, True, e=4) 
+
+    entry = find_map_by_param(sdfg, 'e')
+    #xfutil.permute_map(entry, np.roll([0,1,2,3],0))     
+#    divides_evenly = True
+#    xfutil.tile(sdfg, entry, divides_evenly, True, e=4) 
     
     #entry = find_map_by_param(sdfg, 'tile_e')
-    #xfutil.tile(sdfg, entry, divides_evenly, True, tile_e=64)
+    #xfutil.tile(sdfg, entry, divides_evenly, True, tile_e=8)
     #entry_tile_e = find_map_by_param(sdfg, 'tile_e') 
     
     #entry = find_map_by_param(sdfg, 'tile_e')
-    #entry.schedule = dc.ScheduleType.GPU_ThreadBlock
+#    entry.schedule = dc.ScheduleType.GPU_ThreadBlock
  
-    entry = find_map_by_param(sdfg, 'tile_e')
-    exit = find_map_by_param(sdfg, 'e')
-    
-    #find_map_by_param(sdfg,'l').map.unroll = True
-    #find_map_by_param(sdfg,'l2').map.unroll = True
-
-    InLocalStorage.apply_to(sdfg=sdfg,
-                            node_a=entry,
-                            node_b=exit,
-                            options={
-                                "array": "dx",
-                                "create_array": True,
-                                "prefix": "sh"
-                            },
-                            save=True)
-    sh_rtmp = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
-    sh_rtmp1 = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
-    sh_rtmp2 = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
-    sh_rtmp3 = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
-    #sdfg.arrays[sh_rtmp.data].storage = dc.StorageType.GPU_Shared     
-    sdfg.arrays[sh_rtmp1.data].storage = dc.StorageType.GPU_Shared     
-    sdfg.arrays[sh_rtmp2.data].storage = dc.StorageType.GPU_Shared     
-    sdfg.arrays[sh_rtmp3.data].storage = dc.StorageType.GPU_Shared     
+    exit = find_map_by_param(sdfg, 'k')
+    exit.schedule = dc.ScheduleType.GPU_ThreadBlock
    
+    #smem_ttu = InLocalStorage.apply_to(sdfg, dict(array='ttmp'), node_a=entry, node_b=exit)
+    #smem_stu = InLocalStorage.apply_to(sdfg, dict(array='stmp'), node_a=entry, node_b=exit)
+    #smem_rtu = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
+    #smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
 
-    #smem_dx = InLocalStorage.apply_to(sdfg, dict(array='dx_d'), node_a=entry, node_b=exit)
-    #smem_dy = InLocalStorage.apply_to(sdfg, dict(array='dy_d'), node_a=entry, node_b=exit)
-    #smem_dz = InLocalStorage.apply_to(sdfg, dict(array='dz_d'), node_a=entry, node_b=exit)
-    ##
-    #smem_dtx = InLocalStorage.apply_to(sdfg, dict(array='dxt_d'), node_a=entry, node_b=exit)
-    #smem_dty = InLocalStorage.apply_to(sdfg, dict(array='dyt_d'), node_a=entry, node_b=exit)
-    #smem_dtz = InLocalStorage.apply_to(sdfg, dict(array='dzt_d'), node_a=entry, node_b=exit)
-    #
-    #sdfg.arrays[smem_dx.data].storage = dc.StorageType.GPU_Shared     
-    #sdfg.arrays[smem_dy.data].storage = dc.StorageType.GPU_Shared     
-    #sdfg.arrays[smem_dz.data].storage = dc.StorageType.GPU_Shared     
-   
-    #sdfg.arrays[smem_dtx.data].storage = dc.StorageType.GPU_Shared     
-    #sdfg.arrays[smem_dty.data].storage = dc.StorageType.GPU_Shared     
-    #sdfg.arrays[smem_dtz.data].storage = dc.StorageType.GPU_Shared     
+#    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='dx_d'), node_a=entry, node_b=exit)
+#    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='dy_d'), node_a=entry, node_b=exit)
+#    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='dz_d'), node_a=entry, node_b=exit)
   
-    #DoubleBuffering.apply_to(sdfg, map_entry=ktile, transient=smem_a)#
+    #DoubleBuffering.apply_to(sdfg, map_entry=exit, transient=smem_dx)#
 
     #xfutil          -- Warps                      
     #MapTiling       -- Warps
@@ -113,4 +86,26 @@ def total_opt_pass(sdfg : dc.SDFG):
     #Shared          -- sdfg.arrays[smem_b.data].storage = dace.StorageType.GPU_Shared
     #Registers?      -- 
     #Unroll inner    -- .map.unroll = True
+    
+    ## Section 2 
+    entry = find_map_by_param(sdfg, 'e2')
+    MapExpansion.apply_to(sdfg, map_entry=entry)
+    MapCollapse.apply_to(sdfg,outer_map_entry=find_map_by_param(sdfg, 'k2'),inner_map_entry=find_map_by_param(sdfg, 'j2'))
+    MapCollapse.apply_to(sdfg,outer_map_entry=find_map_by_param(sdfg, 'j2'),inner_map_entry=find_map_by_param(sdfg, 'i2'))
+    exit = find_map_by_param(sdfg,'k2')
+    exit.schedule = dc.ScheduleType.GPU_ThreadBlock
+   
+#    smem_dtx = InLocalStorage.apply_to(sdfg, dict(array='dxt_d'), node_a=entry, node_b=exit)
+#    smem_dty = InLocalStorage.apply_to(sdfg, dict(array='dyt_d'), node_a=entry, node_b=exit)
+#    smem_dtz = InLocalStorage.apply_to(sdfg, dict(array='dzt_d'), node_a=entry, node_b=exit)
+
+# sdfg.arrays[smem_b.data].storage = dace.StorageType.GPU_Shared
+#    arrays[aname].lifetime = dtypes.AllocationLifetime.Persistent
+    #print(type(sdfg.arrays["stmp"])) #[stmp]) 
+    #sdfg.arrays["stmp"].storage = dtypes.AllocationLifetime.Persistent
+    #sdfg.arrays["rtmp"].storage = dtypes.AllocationLifetime.Persistent
+    #sdfg.arrays["ttmp"].storage = dtypes.AllocationLifetime.Persistent
+    #sdfg.arrays["ur"].storage =   dtypes.AllocationLifetime.Persistent
+    #sdfg.arrays["us"].storage =   dtypes.AllocationLifetime.Persistent
+    #sdfg.arrays["ut"].storage =   dtypes.AllocationLifetime.Persistent
     return sdfg 
