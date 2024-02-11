@@ -10,7 +10,7 @@ LIBS    = `pkg-config --libs neko`
 FC      = `pkg-config --variable=compiler neko`
 
 DEST    = nekobench
-SRC	= ${SRC_PATH}/ax.F90 ${SRC_PATH}/dace_ax_helm_device.F90 ${SRC_PATH}/dace_ax_helm_fctry.F90 driver.F90
+SRC	= ${SRC_PATH}/dace_ax_helm_device.F90 driver.F90
 #driver_small.F90
 OBJ	= ${SRC:.F90=.o}
 

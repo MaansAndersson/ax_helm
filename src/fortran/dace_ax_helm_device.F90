@@ -31,20 +31,26 @@
 ! POSSIBILITY OF SUCH DAMAGE.
 !
 module dace_ax_helm_device
-  use dace_ax_product
+  use num_types
+  use coefs
+  use device
+  use space
+  use field
+  use mesh 
+  use ax_product, only : ax_t 
   use device_math, only : device_addcol4
   use device, only : device_get_ptr
   use num_types, only : rp, c_rp
   use, intrinsic :: iso_c_binding, only : c_ptr, c_int
 
   implicit none
-  private
+  type(c_ptr) :: handle
 
-  type, public, extends(dace_ax_t) :: dace_ax_helm_device_t
+  type, public, extends(ax_t) :: dace_ax_helm_device_t
    contains
      procedure, nopass :: compute => dace_ax_helm_device_compute 
-     procedure, nopass :: init => dace_ax_helm_device_init 
-     procedure, nopass :: delete => dace_ax_helm_device_delete
+  !   procedure, nopass :: init => dace_ax_helm_device_init
+  !   procedure, nopass :: free => dace_ax_helm_device_free
   end type dace_ax_helm_device_t
 
    interface  
@@ -71,6 +77,7 @@ module dace_ax_helm_device
           h1_d, u_d, w_d, lx, ne) &
           bind(c, name='__program_ax')
           use, intrinsic :: iso_c_binding
+       import c_rp
        type(c_ptr), value :: handle
        type(c_ptr), value :: w_d, u_d
        type(c_ptr), value :: dx_d, dy_d, dz_d
@@ -81,16 +88,16 @@ module dace_ax_helm_device
   end interface
 
 contains
-  subroutine dace_ax_helm_device_compute(handle, w, u, coef, msh, Xh)
-    type(c_ptr),   intent(inout) :: handle
+  subroutine dace_ax_helm_device_compute(w, u, coef, msh, Xh)
     type(mesh_t),  intent(inout) :: msh
     type(space_t), intent(inout) :: Xh
     type(coef_t),  intent(inout) :: coef
     real(kind=rp), intent(inout) :: w(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
     real(kind=rp), intent(inout) :: u(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
-    type(c_ptr) :: u_d, w_d
+    type(c_ptr) :: u_d, w_d !, handle 
     
     !write(*,*) 'compute()'
+    !handle = this%get_handle()
 
     u_d = device_get_ptr(u)
     w_d = device_get_ptr(w)
@@ -102,17 +109,23 @@ contains
          coef%G11_d, coef%G12_d, coef%G13_d, &
          coef%G22_d, coef%G23_d, coef%G33_d, &
          coef%h1_d, u_d, w_d, &
-         Xh%lx, msh%nelv)
+         Xh%lx,msh%nelv)
     if (coef%ifh2) then
        call device_addcol4(w_d ,coef%h2_d, coef%B_d, u_d, coef%dof%size())
     end if
     
   end subroutine dace_ax_helm_device_compute
   
-  subroutine dace_ax_helm_device_init(handle, lx, ne)
-        type(c_ptr), intent(inout) :: handle
-        integer :: lx, ne 
+  subroutine dace_ax_helm_device_init(lx, ne)
+        integer, intent(in) :: lx, ne 
+        print *, handle
         handle = dace_ax_init(lx, ne)  
+        print *, handle, 'hey'
   end subroutine dace_ax_helm_device_init
+
+  subroutine dace_ax_helm_device_free()
+        !type(c_ptr) :: handle  
+    call dace_ax_helm_device_delete(handle)
+  end subroutine 
 
 end module dace_ax_helm_device
