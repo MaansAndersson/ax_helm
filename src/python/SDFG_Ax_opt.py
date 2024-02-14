@@ -51,20 +51,18 @@ def transient_reuse():
 
 def total_opt_pass(sdfg : dc.SDFG):
     print('total opt pass') 
-    m, n, k = 256, 256, 256
 
     entry = find_map_by_param(sdfg, 'e')
     #xfutil.permute_map(entry, np.roll([0,1,2,3],0))     
-#    divides_evenly = True
-#    xfutil.tile(sdfg, entry, divides_evenly, True, e=4) 
+
+    #divides_evenly = True
+    #xfutil.tile(sdfg, entry, divides_evenly, True, e=1) 
+    #entry.schedule = dc.ScheduleType.GPU_Default
     
+    #MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'tile_e'),
+    #                           inner_map_entry=find_map_by_param(sdfg, 'e'))
     #entry = find_map_by_param(sdfg, 'tile_e')
-    #xfutil.tile(sdfg, entry, divides_evenly, True, tile_e=8)
-    #entry_tile_e = find_map_by_param(sdfg, 'tile_e') 
-    
-    #entry = find_map_by_param(sdfg, 'tile_e')
-#    entry.schedule = dc.ScheduleType.GPU_ThreadBlock
- 
+     
     exit = find_map_by_param(sdfg, 'k')
     exit.schedule = dc.ScheduleType.GPU_ThreadBlock
    
@@ -86,20 +84,14 @@ def total_opt_pass(sdfg : dc.SDFG):
     #smem_dy = InLocalStorage.apply_to(sdfg, dict(array='G0d'), node_a=entry, node_b=exit)
     #smem_dz = InLocalStorage.apply_to(sdfg, dict(array='G0d'), node_a=entry, node_b=exit)
     #DoubleBuffering.apply_to(sdfg, map_entry=exit, transient=smem_dx)#
-
-    #xfutil          -- Warps                      
-    #MapTiling       -- Warps
-    #Scheduler       -- dace.ScheduleType.GPU_ThreadBlock
-    #InLocalStorage  -- smem_b = InLocalStorage.apply_to(sdfg, dict(array='B'), node_a=ktile, node_b=btile)
-    #Shared          -- sdfg.arrays[smem_b.data].storage = dace.StorageType.GPU_Shared
-    #Registers?      -- 
-    #Unroll inner    -- .map.unroll = True
-    
+ 
     ## Section 2 
     entry = find_map_by_param(sdfg, 'e2')
     MapExpansion.apply_to(sdfg, map_entry=entry)
-    MapCollapse.apply_to(sdfg,outer_map_entry=find_map_by_param(sdfg, 'k2'),inner_map_entry=find_map_by_param(sdfg, 'j2'))
-    MapCollapse.apply_to(sdfg,outer_map_entry=find_map_by_param(sdfg, 'j2'),inner_map_entry=find_map_by_param(sdfg, 'i2'))
+    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'k2'),
+                               inner_map_entry=find_map_by_param(sdfg, 'j2'))
+    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'j2'),
+                               inner_map_entry=find_map_by_param(sdfg, 'i2'))
     exit = find_map_by_param(sdfg,'k2')
     exit.schedule = dc.ScheduleType.GPU_ThreadBlock
    
@@ -109,16 +101,46 @@ def total_opt_pass(sdfg : dc.SDFG):
     smem_utt = InLocalStorage.apply_to(sdfg, dict(array='uttmp'), node_a=entry, node_b=exit)
     smem_ust = InLocalStorage.apply_to(sdfg, dict(array='ustmp'), node_a=entry, node_b=exit)
     smem_urt = InLocalStorage.apply_to(sdfg, dict(array='urtmp'), node_a=entry, node_b=exit)
-    #smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
-    #smem_w = InLocalStorage.apply_to(sdfg, dict(array='w_d'), node_a=entry, node_b=exit)
-     
-# sdfg.arrays[smem_b.data].storage = dace.StorageType.GPU_Shared
-#    arrays[aname].lifetime = dtypes.AllocationLifetime.Persistent
-    #print(type(sdfg.arrays["stmp"])) #[stmp]) 
-    #sdfg.arrays["stmp"].storage = dtypes.AllocationLifetime.Persistent
-    #sdfg.arrays["rtmp"].storage = dtypes.AllocationLifetime.Persistent
-    #sdfg.arrays["ttmp"].storage = dtypes.AllocationLifetime.Persistent
-    #sdfg.arrays["ur"].storage =   dtypes.AllocationLifetime.Persistent
-    #sdfg.arrays["us"].storage =   dtypes.AllocationLifetime.Persistent
-    #sdfg.arrays["ut"].storage =   dtypes.AllocationLifetime.Persistent
+    
+    return sdfg 
+
+def total_opt_pass_merged(sdfg : dc.SDFG):
+    print('total opt pass merge') 
+
+    entry = find_map_by_param(sdfg, 'e')
+    exit = find_map_by_param(sdfg, 'k')
+    exit.schedule = dc.ScheduleType.GPU_ThreadBlock
+   
+    smem_tt = InLocalStorage.apply_to(sdfg, dict(array='ttmp'), node_a=entry, node_b=exit)
+    smem_st = InLocalStorage.apply_to(sdfg, dict(array='stmp'), node_a=entry, node_b=exit)
+    smem_rt = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
+
+    smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
+
+    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='dx_d'), node_a=entry, node_b=exit)
+    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='dy_d'), node_a=entry, node_b=exit)
+    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='dz_d'), node_a=entry, node_b=exit)
+
+    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    
+    entry = find_map_by_param(sdfg, 'e2')
+    MapExpansion.apply_to(sdfg, map_entry=entry)
+    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'k2'),
+                               inner_map_entry=find_map_by_param(sdfg, 'j2'))
+    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'j2'),
+                               inner_map_entry=find_map_by_param(sdfg, 'i2'))
+    exit = find_map_by_param(sdfg,'k2')
+    exit.schedule = dc.ScheduleType.GPU_ThreadBlock
+   
+
+    smem_dtx = InLocalStorage.apply_to(sdfg, dict(array='dxt_d'), node_a=entry, node_b=exit)
+    smem_dty = InLocalStorage.apply_to(sdfg, dict(array='dyt_d'), node_a=entry, node_b=exit)
+    smem_dtz = InLocalStorage.apply_to(sdfg, dict(array='dzt_d'), node_a=entry, node_b=exit)
+    smem_utt = InLocalStorage.apply_to(sdfg, dict(array='uttmp'), node_a=entry, node_b=exit)
+    smem_ust = InLocalStorage.apply_to(sdfg, dict(array='ustmp'), node_a=entry, node_b=exit)
+    smem_urt = InLocalStorage.apply_to(sdfg, dict(array='urtmp'), node_a=entry, node_b=exit)
+    
     return sdfg 
