@@ -10,8 +10,9 @@ from dace.transformation.auto.auto_optimize import make_transients_persistent
 
 nel = dc.symbol('ne')
 lx = 8 
+lx = dc.symbol('lx')
 lxx = dc.symbol('lx')
- 
+
 dtype = dc.float64
 
 from dace.transformation.dataflow import (DoubleBuffering, MapCollapse, MapExpansion, MapReduceFusion, StripMining, InLocalStorage, AccumulateTransient, AugAssignToWCR)
@@ -22,16 +23,15 @@ from dace.transformation.interstate import (GPUTransformSDFG, HoistState,
                                             InlineSDFG, StateFusion)
 from dace.transformation.subgraph import MultiExpansion, SubgraphFusion, GPUPersistentKernel
 from dace.transformation.dataflow import (DoubleBuffering, MapCollapse, MapExpansion, MapReduceFusion, StripMining,
-                                          InLocalStorage, AccumulateTransient, Vectorization, MapToForLoop, MapUnroll,
-                                          MapFusion, MapWCRFusion)
+                                          InLocalStorage, AccumulateTransient, Vectorization, MapToForLoop, MapUnroll, MapFusion, MapWCRFusion)
 
-from dace.transformation.interstate import (StateFusion)
+from dace.transformation.interstate import (StateFusion, LoopUnroll, LoopPeeling)
 
 from SDFG_Ax_opt import total_opt_pass
 
 
 @dc.program()
-def ax_4D(w_d   : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
+def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
           u_d   : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
           dx_d  : dtype[lx,lx]    @ StorageType.GPU_Global,
           dy_d  : dtype[lx,lx]    @ StorageType.GPU_Global,
@@ -51,7 +51,7 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
           ttmp  : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
           urtmp    : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
           ustmp    : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
-          uttmp    : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global):
+          uttmp    : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global):
 
 
 
@@ -62,7 +62,6 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
     # ur     = np.empty((nel,lx,lx,lx),dtype=dtype) 
     # us     = np.empty((nel,lx,lx,lx),dtype=dtype) 
     # ut     = np.empty((nel,lx,lx,lx),dtype=dtype)   
-    #wijke = np.zeros((nel,lx,lx,lx),dtype=dtype)   
 
     for e, k, j, i in dc.map[0:ne,0:8,0:8,0:8] @ ScheduleType.GPU_Device:       
         rtmp[e,k,j,i] = 0.0
@@ -118,11 +117,19 @@ if __name__ == "__main__":
     
 
     #make_transients_persistent(ax_sdfg,dtypes.DeviceType.GPU,True) 
-#    total_opt_pass(ax_sdfg)
+
+
+    total_opt_pass(ax_sdfg)
+    #ax_sdfg.apply_transformations(LoopUnroll)
+    #for i in range(16): 
+    #    ax_sdfg.apply_transformations(LoopPeeling)
+    #ax_sdfg.apply_transformations(LoopPeeling)
+    
+
     print('simplify()')
-    #ax_sdfg.apply_transformations_repeated( TaskletFusion) 
+    #ax_sdfg.apply_transformations_repeated(TaskletFusion) 
     ax_sdfg.simplify()
-    #ax_sdfg.apply_transformations(StreamingMemory) 
+    #ax_sdfg.apply_transformations_repeated(StreamingMemory) 
     #ax_sdfg.apply_transformations(WarpTiling)
     #aopt.auto_optimize(ax_sdfg, dc.DeviceType.GPU)
     
