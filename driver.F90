@@ -206,16 +206,16 @@ program nekobench
   call ustmp%init(dm)
   call uttmp%init(dm)
 
-  stmp  = 0.0_rp
-  rtmp  = 0.0_rp
-  ttmp  = 0.0_rp
-  urtmp = 0.0_rp
-  ustmp = 0.0_rp
-  uttmp = 0.0_rp
+  !stmp  = 0.0_rp
+  !rtmp  = 0.0_rp
+  !ttmp  = 0.0_rp
+  !urtmp = 0.0_rp
+  !ustmp = 0.0_rp
+  !uttmp = 0.0_rp
   
   call device_sync()
   
-  call dace_ax_helm_device_init(Xh%lx, msh%nelv, rtmp%x_d, stmp%x_d, ttmp%x_d, urtmp%x_d, ustmp%x_d, uttmp%x_d)
+  call dace_ax_helm_device_init(Xh%lx, msh%nelv) !, rtmp%x_d, stmp%x_d, ttmp%x_d, urtmp%x_d, ustmp%x_d, uttmp%x_d)
   call device_sync()
   call set_f(f1%x,f1%dof)
   if(NEKO_BCKND_DEVICE .eq. 1) call device_memcpy(f1%x, f1%x_d, n, HOST_TO_DEVICE,sync=.true.) 
