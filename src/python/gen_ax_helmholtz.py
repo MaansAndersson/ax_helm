@@ -1,4 +1,4 @@
-
+import sys 
 import dace as dc 
 import numpy as np
 #import scipy as sp
@@ -9,14 +9,14 @@ from dace.transformation.auto import auto_optimize as aopt
 from dace.transformation.auto.auto_optimize import make_transients_persistent
 from dace.transformation.passes.transient_reuse import TransientReuse
 from dace.transformation.passes.fusion_inline import FixNestedSDFGReferences
-from dace.transformation.passes.fusion_inline import FixNestedSDFGReferences
 from dace.transformation.dataflow import BufferTiling
 
 
 nel = dc.symbol('ne')
-lx = 8 
 lx = dc.symbol('lx')
-lxx = dc.symbol('lx')
+lxx = dc.symbol('lxx')
+
+
 
 dtype = dc.float64
 
@@ -51,14 +51,6 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
           g12_d : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
           g13_d : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
           g23_d : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global):
-#          rtmp  : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
-#          stmp  : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
-#          ttmp  : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
-#          urtmp    : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
-#          ustmp    : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global, 
-#          uttmp    : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global):
-
-
 
     # Seem to be ok to run without init
     stmp   = np.empty((nel,lx,lx,lx),dtype=dtype)
@@ -68,11 +60,11 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
     ustmp  = np.empty((nel,lx,lx,lx),dtype=dtype) 
     uttmp  = np.empty((nel,lx,lx,lx),dtype=dtype)   
 
-    for e, k, j, i in dc.map[0:ne,0:8,0:8,0:8] @ ScheduleType.GPU_Device:       
+    for e, k, j, i in dc.map[0:ne,0:lx,0:lx,0:lx] @ ScheduleType.GPU_Device:       
         rtmp[e,k,j,i] = 0.0
         stmp[e,k,j,i] = 0.0
         ttmp[e,k,j,i] = 0.0
-        for l in range(8):
+        for l in range(lx):
            rtmp[e,k,j,i] = rtmp[e,k,j,i] + dx_d[l,i] * u_d[e,k,j,l]
            stmp[e,k,j,i] = stmp[e,k,j,i] + dy_d[l,j] * u_d[e,k,l,i]
            ttmp[e,k,j,i] = ttmp[e,k,j,i] + dz_d[l,k] * u_d[e,l,j,i] 
@@ -89,9 +81,9 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
         ustmp[e,k,j,i] = H0*( G01*rtmp[e,k,j,i] + G11*stmp[e,k,j,i] + G12*ttmp[e,k,j,i])
         uttmp[e,k,j,i] = H0*( G02*rtmp[e,k,j,i] + G12*stmp[e,k,j,i] + G22*ttmp[e,k,j,i])
       
-    for e2, k2, j2, i2 in dc.map[0:ne,0:8,0:8,0:8] @ ScheduleType.GPU_Device:
+    for e2, k2, j2, i2 in dc.map[0:ne,0:lx,0:lx,0:lx] @ ScheduleType.GPU_Device:
         w_d[e2,k2,j2,i2] = 0.0
-        for l2 in range(8):
+        for l2 in range(lx):
             w_d[e2,k2,j2,i2] = w_d[e2,k2,j2,i2] + dxt_d[l2,i2] * urtmp[e2,k2,j2,l2]
             w_d[e2,k2,j2,i2] = w_d[e2,k2,j2,i2] + dyt_d[l2,j2] * ustmp[e2,k2,l2,i2] 
             w_d[e2,k2,j2,i2] = w_d[e2,k2,j2,i2] + dzt_d[l2,k2] * uttmp[e2,l2,j2,i2]
@@ -103,10 +95,12 @@ if __name__ == "__main__":
 
 
     lx_const = [];
+    i = int(sys.argv[1])
     print('to_sdfg()')
     ax_sdfg = ax_4D.to_sdfg()
-    ax_sdfg.name = 'ax' #+str(lx_const)
-    
+    ax_sdfg.name = 'ax__' #+str(i)
+    print('promote lx to', i)
+    ax_sdfg.replace('lx',str(i))
     print('simplify()')
     #ax_sdfg.simplify()
     print('GPU()')
@@ -115,30 +109,20 @@ if __name__ == "__main__":
     ax_sdfg.apply_transformations(MapExpansion)
     ax_sdfg.apply_transformations(MapCollapse)
     ax_sdfg.apply_transformations(MapCollapse)
-#    # ax_sdfg.apply_transformations(WarpTilingceType.GPU,True) 
-#    # ax_sdfg.apply_transformations(TransientReuse)
-#    # ax_sdfg.apply_transformations(DoubleBuffering)   
     total_opt_pass(ax_sdfg)
-
     ax_sdfg.simplify()
     count = ax_sdfg.apply_transformations(MapFusion) 
     ax_sdfg.apply_transformations(BufferTiling) # options={'tile_sizes': 128})
     #assert count > 0
-
-   
-
+    
     print('simplify()')
     ax_sdfg.simplify()
-    #ax_sdfg.apply_transformations_repeated(StreamingMemory) 
-    #ax_sdfg.apply_transformations(WarpTiling)
-    #aopt.auto_optimize(ax_sdfg, dc.DeviceType.GPU)
-    
-
     print('validate()')
     ax_sdfg.validate()
     print('compile()')
     ax_sdfg.compile()
-
+    print(str(i))
+    del ax_sdfg
 
 
 

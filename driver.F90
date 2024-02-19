@@ -173,8 +173,9 @@ program nekobench
   do i = 1, niter
      if (NEKO_BCKND_DEVICE .eq. 1) then
         if (bcknd .eq. 0) then
-          call dace_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
-          if (i .eq. 1) print *, niter*0.25*device_glsc2(f1%x_d,f1%x_d,dm%size())
+          !call dace_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+          call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+          !if (i .eq. 1) print *, niter*0.25*device_glsc2(f1%x_d,f1%x_d,dm%size())
         else 
           call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
         end if 
@@ -206,13 +207,6 @@ program nekobench
   call ustmp%init(dm)
   call uttmp%init(dm)
 
-  !stmp  = 0.0_rp
-  !rtmp  = 0.0_rp
-  !ttmp  = 0.0_rp
-  !urtmp = 0.0_rp
-  !ustmp = 0.0_rp
-  !uttmp = 0.0_rp
-  
   call device_sync()
   
   call dace_ax_helm_device_init(Xh%lx, msh%nelv) !, rtmp%x_d, stmp%x_d, ttmp%x_d, urtmp%x_d, ustmp%x_d, uttmp%x_d)
