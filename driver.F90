@@ -59,6 +59,15 @@ program nekobench
   use dace_ax_helm_device
   use setup
   use dace_math
+!  use ax8mod
+!  use ax7mod
+!  use ax6mod
+!  use ax5mod
+!  use ax4mod
+!  use ax3mod
+!  use ax2mod
+!  use ax1mod
+  
   implicit none
 
   character(len=NEKO_FNAME_LEN) :: fname, lxchar
@@ -81,7 +90,7 @@ program nekobench
     
   ! Dace
   class(dace_ax_helm_device_t), allocatable :: dace_ax_helm
-  type(c_ptr) :: handle_add3s2
+  !type(c_ptr) :: handle_add3s2
   type(field_t) :: stmp, rtmp, ttmp, urtmp, ustmp, uttmp !temporary  
   argc = command_argument_count()
 
@@ -161,7 +170,7 @@ program nekobench
   f1 = 1.0_rp
   f2 = 1.0_rp
   f3 = 1.0_rp
-  c1 = 1.0_rp
+  c1 = 2.0_rp
   c2 = 1.0_rp
   
   call dace_add3s2_init(dm%size())
@@ -174,7 +183,8 @@ program nekobench
      if (NEKO_BCKND_DEVICE .eq. 1) then
         if (bcknd .eq. 0) then
           call dace_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
-          if (i .eq. 1) print *, niter*0.25*device_glsc2(f1%x_d,f1%x_d,dm%size())
+          !call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
+          !if (i .eq. 1) print *, niter*0.25*device_glsc2(f1%x_d,f1%x_d,dm%size())
         else 
           call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
         end if 
@@ -184,6 +194,13 @@ program nekobench
   end do
   call device_sync()
   t1 = MPI_Wtime()
+  
+  call device_sync()
+  if (NEKO_BCKND_DEVICE .eq. 1) then
+     print *, "norm of ||add3s2 f2||, L2 norm squared", device_glsc2(f1%x_d,f1%x_d,n)
+  else
+     print *, "norm of ||add3s2 f2||, L2 norm squared", glsc2(f2%x,f2%x,n)
+  end if
 
   time = t1 - t0
   !Assume double precision
@@ -206,13 +223,6 @@ program nekobench
   call ustmp%init(dm)
   call uttmp%init(dm)
 
-  !stmp  = 0.0_rp
-  !rtmp  = 0.0_rp
-  !ttmp  = 0.0_rp
-  !urtmp = 0.0_rp
-  !ustmp = 0.0_rp
-  !uttmp = 0.0_rp
-  
   call device_sync()
   
   call dace_ax_helm_device_init(Xh%lx, msh%nelv) !, rtmp%x_d, stmp%x_d, ttmp%x_d, urtmp%x_d, ustmp%x_d, uttmp%x_d)
@@ -221,6 +231,7 @@ program nekobench
   if(NEKO_BCKND_DEVICE .eq. 1) call device_memcpy(f1%x, f1%x_d, n, HOST_TO_DEVICE,sync=.true.) 
    
   call device_sync()
+  
   !Benchmark Ax, lets not overengineer this...
   ! To not time the autotune...
   if (bcknd .eq. 0) then  

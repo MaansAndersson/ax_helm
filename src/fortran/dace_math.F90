@@ -3,7 +3,7 @@ module dace_math
   use num_types, only : rp, c_rp
   use device, only : device_get_ptr
   implicit none 
-  type(c_ptr) :: handle
+  type(c_ptr) :: handle_add3s2
          
 !  !> Returns \f$ a = c1 * b + c2 * c \f$
 !  subroutine add3s2(a, b, c, c1, c2 ,n)
@@ -31,10 +31,10 @@ module dace_math
    end interface
 
    interface 
-     subroutine hidden__dace_add3s2_delete(handle) & 
+     subroutine hidden__dace_add3s2_delete(handle_add3s2) & 
              bind(c, name='__dace_exit_add3s2') 
              use, intrinsic :: iso_c_binding 
-             type(c_ptr), value :: handle
+             type(c_ptr), value :: handle_add3s2
      end subroutine hidden__dace_add3s2_delete
    end interface
 
@@ -62,16 +62,16 @@ contains
     !d_a=device_get_ptr(a) 
     !d_b=device_get_ptr(b) 
     !d_c=device_get_ptr(c)   
-    call hidden__dace_device_add3s2(handle, d_a, d_b, d_c, ne, c0, c1) 
+    call hidden__dace_device_add3s2(handle_add3s2, d_a, d_b, d_c, ne, c0, c1) 
   end subroutine dace_add3s2
 
   subroutine dace_add3s2_init(ne)
     integer, intent(in) :: ne
-    handle = hidden__dace_add3s2_init(ne) 
+    handle_add3s2 = hidden__dace_add3s2_init(ne) 
   end subroutine dace_add3s2_init
   
   subroutine dace_add3s2_free()
-    call hidden__dace_add3s2_delete(handle)
+    call hidden__dace_add3s2_delete(handle_add3s2)
   end subroutine dace_add3s2_free
 
 end module dace_math
