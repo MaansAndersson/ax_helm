@@ -1,0 +1,9 @@
+[submodule "submodules/dace"]
+	path = submodules/dace
+	url = git@github.com:spcl/dace.git
+[submodule "submodules/neko"]
+	path = submodules/neko
+	url = git@github.com:ExtremeFLOW/neko.git
+[submodule "submodules/json-fortran"]
+	path = submodules/json-fortran
+	url = git@github.com:ExtremeFLOW/json-fortran.git
