@@ -93,13 +93,16 @@ if __name__ == "__main__":
  #   
     dc.Config.set('compiler', 'default_data_types', value='C') 
 
+    #dc.Config.set('linker') 
 
     lx_const = [];
     i = int(sys.argv[1])
+    #order = ['I','II','III','IV','V','VI','VII','otto','IX','X']
     print('to_sdfg()')
     ax_sdfg = ax_4D.to_sdfg()
-    ax_sdfg.name = 'ax__' #+str(i)
+    ax_sdfg.name = 'ax'+str(i)
     print('promote lx to', i)
+
     ax_sdfg.replace('lx',str(i))
     print('simplify()')
     #ax_sdfg.simplify()
@@ -114,14 +117,13 @@ if __name__ == "__main__":
     count = ax_sdfg.apply_transformations(MapFusion) 
     ax_sdfg.apply_transformations(BufferTiling) # options={'tile_sizes': 128})
     #assert count > 0
-    
     print('simplify()')
     ax_sdfg.simplify()
     print('validate()')
     ax_sdfg.validate()
     print('compile()')
     ax_sdfg.compile()
-    print(str(i))
+    print('Generating lib', i)
     del ax_sdfg
 
 
