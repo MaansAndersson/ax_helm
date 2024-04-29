@@ -13,9 +13,9 @@ from dace.transformation.dataflow import (MapFusion, ReduceExpansion,
 from dace.transformation.interstate import (GPUTransformSDFG, HoistState,
                                             InlineSDFG, StateFusion)
 from dace.transformation.subgraph import MultiExpansion, SubgraphFusion
-
+from dace.transformation.dataflow import BufferTiling, RedundantArray, TrivialTaskletElimination
+from dace.transformation.interstate import (StateFusion, LoopUnroll, LoopPeeling)
 from dace.transformation import helpers as xfutil
-
 
 def find_map_by_param(sdfg: dc.SDFG, pname: str) -> dc.nodes.MapEntry:
     """ Finds the first map entry node by the given parameter name. """
@@ -37,7 +37,6 @@ def find_mapexit_by_param(sdfg: dc.SDFG, pname: str) -> dc.nodes.MapExit:
 ## SDFG Passes
 
 def add_local_storage(sdfg: dc.SDFG):
-
     ktile = find_map_by_param(sdfg, 'tile_k')
     smem_a = InLocalStorage.apply_to(sdfg, dict(array='A'), node_a=ktile, node_b=btile)
     smem_b = InLocalStorage.apply_to(sdfg, dict(array='B'), node_a=ktile, node_b=btile)
@@ -51,40 +50,20 @@ def transient_reuse():
 
 def total_opt_pass(sdfg : dc.SDFG):
     print('total opt pass') 
-
+    sdfg.apply_gpu_transformations()
+    sdfg.apply_transformations(MapExpansion)
+    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'k'),
+                               inner_map_entry=find_map_by_param(sdfg, 'j'))
+    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'j'),
+                               inner_map_entry=find_map_by_param(sdfg, 'i'))
     entry = find_map_by_param(sdfg, 'e')
-    #xfutil.permute_map(entry, np.roll([0,1,2,3],0))     
-
-    #divides_evenly = True
-    #xfutil.tile(sdfg, entry, divides_evenly, True, e=1) 
-    #entry.schedule = dc.ScheduleType.GPU_Default
-    
-    #MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'tile_e'),
-    #                           inner_map_entry=find_map_by_param(sdfg, 'e'))
-    #entry = find_map_by_param(sdfg, 'tile_e')
-     
-    exit = find_map_by_param(sdfg, 'k')
-    exit.schedule = dc.ScheduleType.GPU_ThreadBlock
+    exit  = find_map_by_param(sdfg, 'k')
+    exit.schedule = dc.ScheduleType.GPU_ThreadBlock 
+    data_containers = ['dx_d', 'dy_d', 'dz_d', 'u_d',
+                       'g11_d', 'g12_d', 'g13_d', 'g22_d', 'g23_d', 'g33_d', 'h1_d']
+    for data in data_containers:
+        InLocalStorage.apply_to(sdfg, dict(array=data), node_a=entry, node_b=exit) 
    
-    smem_tt = InLocalStorage.apply_to(sdfg, dict(array='ttmp'), node_a=entry, node_b=exit)
-    smem_st = InLocalStorage.apply_to(sdfg, dict(array='stmp'), node_a=entry, node_b=exit)
-    smem_rt = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
-
-    smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
-
-    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='dx_d'), node_a=entry, node_b=exit)
-    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='dy_d'), node_a=entry, node_b=exit)
-    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='dz_d'), node_a=entry, node_b=exit)
-
-    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
-    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
-    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
-    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
-
-    #smem_dy = InLocalStorage.apply_to(sdfg, dict(array='G0d'), node_a=entry, node_b=exit)
-    #smem_dz = InLocalStorage.apply_to(sdfg, dict(array='G0d'), node_a=entry, node_b=exit)
-    #DoubleBuffering.apply_to(sdfg, map_entry=exit, transient=smem_dx)#
- 
     ## Section 2 
     entry = find_map_by_param(sdfg, 'e2')
     MapExpansion.apply_to(sdfg, map_entry=entry)
@@ -94,53 +73,84 @@ def total_opt_pass(sdfg : dc.SDFG):
                                inner_map_entry=find_map_by_param(sdfg, 'i2'))
     exit = find_map_by_param(sdfg,'k2')
     exit.schedule = dc.ScheduleType.GPU_ThreadBlock
-   
-    smem_dtx = InLocalStorage.apply_to(sdfg, dict(array='dxt_d'), node_a=entry, node_b=exit)
-    smem_dty = InLocalStorage.apply_to(sdfg, dict(array='dyt_d'), node_a=entry, node_b=exit)
-    smem_dtz = InLocalStorage.apply_to(sdfg, dict(array='dzt_d'), node_a=entry, node_b=exit)
-    smem_utt = InLocalStorage.apply_to(sdfg, dict(array='uttmp'), node_a=entry, node_b=exit)
-    smem_ust = InLocalStorage.apply_to(sdfg, dict(array='ustmp'), node_a=entry, node_b=exit)
-    smem_urt = InLocalStorage.apply_to(sdfg, dict(array='urtmp'), node_a=entry, node_b=exit)
+    data_containers = ['dxt_d','dyt_d', 'dzt_d',
+                       'uttmp','ustmp','urtmp']
+    for data in data_containers: 
+        InLocalStorage.apply_to(sdfg, dict(array=data), node_a=entry, node_b=exit) 
+    sdfg.apply_transformations_repeated(RedundantArray)
+    sdfg.apply_transformations(MapFusion)
+    sdfg.simplify()
     
+    print(sdfg.apply_transformations_repeated(TrivialTaskletElimination))
     return sdfg 
 
-def total_opt_pass_merged(sdfg : dc.SDFG):
-    print('total opt pass merge') 
+def exp_pass(sdfg : dc.SDFG):
+    print('exp opt pass') 
+    sdfg.name += 'exp'
+    sdfg.apply_gpu_transformations()
+#    sdfg.apply_transformations(MapExpansion)
+    #MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'k'),
+    #                           inner_map_entry=find_map_by_param(sdfg, 'j'))
+    #MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'j'),
+    #                           inner_map_entry=find_map_by_param(sdfg, 'i'))
 
-    entry = find_map_by_param(sdfg, 'e')
-    exit = find_map_by_param(sdfg, 'k')
-    exit.schedule = dc.ScheduleType.GPU_ThreadBlock
+    #sdfg.apply_transformations(MapCollapse)
+    #sdfg.apply_transformations(MapCollapse)
+    #entry = find_map_by_param(sdfg, 'e')
+    #exit  = find_map_by_param(sdfg, 'k')
+    #exit.schedule = dc.ScheduleType.GPU_ThreadBlock 
+    #data_containers = ['dx_d', 'dy_d', 'dz_d', 'u_d',
+    #                   'g11_d', 'g12_d', 'g13_d', 'g22_d', 'g23_d', 'g33_d', 'h1_d']
+    #for data in data_containers:
+    #    InLocalStorage.apply_to(sdfg, dict(array=data), node_a=entry, node_b=exit) 
    
-    smem_tt = InLocalStorage.apply_to(sdfg, dict(array='ttmp'), node_a=entry, node_b=exit)
-    smem_st = InLocalStorage.apply_to(sdfg, dict(array='stmp'), node_a=entry, node_b=exit)
-    smem_rt = InLocalStorage.apply_to(sdfg, dict(array='rtmp'), node_a=entry, node_b=exit)
+    ### Section 2 
+    #entry = find_map_by_param(sdfg, 'e2')
+    #MapExpansion.apply_to(sdfg, map_entry=entry)
+    #MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'k2'),
+    #                           inner_map_entry=find_map_by_param(sdfg, 'j2'))
+    #MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'j2'),
+    #                           inner_map_entry=find_map_by_param(sdfg, 'i2'))
+    #exit = find_map_by_param(sdfg,'k2')
+    #exit.schedule = dc.ScheduleType.GPU_ThreadBlock
+    #data_containers = ['dxt_d','dyt_d', 'dzt_d',
+    #                   'uttmp','ustmp','urtmp']
+    #for data in data_containers: 
+    #    InLocalStorage.apply_to(sdfg, dict(array=data), node_a=entry, node_b=exit) 
+    #sdfg.apply_transformations_repeated(RedundantArray)
+    #sdfg.apply_transformations(LoopUnroll)
 
-    smem_u = InLocalStorage.apply_to(sdfg, dict(array='u_d'), node_a=entry, node_b=exit)
+    ## Section 3
+    #MapTiling.apply_to(sdfg, map_entry=find_map_by_param(sdfg, 'e'))   
+    #MapTiling.apply_to(sdfg, map_entry=find_map_by_param(sdfg, 'e2'))   
 
-    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='dx_d'), node_a=entry, node_b=exit)
-    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='dy_d'), node_a=entry, node_b=exit)
-    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='dz_d'), node_a=entry, node_b=exit)
-
-    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
-    smem_dy = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
-    smem_dz = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
-    smem_dx = InLocalStorage.apply_to(sdfg, dict(array='G'), node_a=entry, node_b=exit)
+    #entry = find_map_by_param(sdfg, 'tile_e')
+    #exit  = find_map_by_param(sdfg, 'e')
+    #data_containers = ['dx_d', 'dy_d', 'dzt_d',
+    #                   'dxt_d','dyt_d', 'dzt_d',
+    #                   'uttmp','ustmp','urtmp']
+    #
+    #for data in data_containers: 
+    #    InLocalStorage.apply_to(sdfg, dict(array='ttmp'), node_a=entry, node_b=exit) 
+    #
+    #sdfg.apply_transformations(BufferTiling)
+    #sdfg.apply_transformations(MapFusion)
+    #sdfg.simplify()
+    #
+    ##print(sdfg.apply_transformations_repeated(TaskletFusion))
+    #print(sdfg.apply_transformations_repeated(TrivialTaskletElimination))
     
-    entry = find_map_by_param(sdfg, 'e2')
-    MapExpansion.apply_to(sdfg, map_entry=entry)
-    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'k2'),
-                               inner_map_entry=find_map_by_param(sdfg, 'j2'))
-    MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'j2'),
-                               inner_map_entry=find_map_by_param(sdfg, 'i2'))
-    exit = find_map_by_param(sdfg,'k2')
-    exit.schedule = dc.ScheduleType.GPU_ThreadBlock
-   
+    #sdfg.remove_symbol('lxx')# ,stype=dc.int64)    
+    #a_node_list = sdfg.states()
+    #print('')
+    #for state in a_node_list:
+    #    print('state') 
+    #    for nod33s in state.nodes():
+    #        print(nod33s) #nodes()
 
-    smem_dtx = InLocalStorage.apply_to(sdfg, dict(array='dxt_d'), node_a=entry, node_b=exit)
-    smem_dty = InLocalStorage.apply_to(sdfg, dict(array='dyt_d'), node_a=entry, node_b=exit)
-    smem_dtz = InLocalStorage.apply_to(sdfg, dict(array='dzt_d'), node_a=entry, node_b=exit)
-    smem_utt = InLocalStorage.apply_to(sdfg, dict(array='uttmp'), node_a=entry, node_b=exit)
-    smem_ust = InLocalStorage.apply_to(sdfg, dict(array='ustmp'), node_a=entry, node_b=exit)
-    smem_urt = InLocalStorage.apply_to(sdfg, dict(array='urtmp'), node_a=entry, node_b=exit)
-    
+    #sdfg.apply_transformations(LoopPeeling)
+    #sdfg.apply_transformations(LoopPeeling)
+    #sdfg.apply_transformations(LoopPeeling)
+    #sdfg.apply_transformations(LoopUnroll)
     return sdfg 
+

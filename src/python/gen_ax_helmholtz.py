@@ -4,36 +4,14 @@ import numpy as np
 #import scipy as sp
 import copy
 from dace.dtypes import StorageType, ScheduleType 
-from dace import config, data as dt, dtypes, Memlet, symbolic
-from dace.transformation.auto import auto_optimize as aopt
-from dace.transformation.auto.auto_optimize import make_transients_persistent
-from dace.transformation.passes.transient_reuse import TransientReuse
-from dace.transformation.passes.fusion_inline import FixNestedSDFGReferences
-from dace.transformation.dataflow import BufferTiling
+from SDFG_Ax_opt import (total_opt_pass, exp_pass)
 
 
 nel = dc.symbol('ne')
-lx = dc.symbol('lx')
+lx = 8 # dc.symbol('lx')
 lxx = dc.symbol('lxx')
-
-
-
 dtype = dc.float64
-
-from dace.transformation.dataflow import (DoubleBuffering, MapCollapse, MapExpansion, MapReduceFusion, StripMining, InLocalStorage, AccumulateTransient, AugAssignToWCR)
-from dace.transformation.dataflow import (MapFusion, ReduceExpansion,
-                                          TrivialMapElimination, Vectorization,
-                                          WarpTiling, MapTiling, TaskletFusion, StreamingMemory)
-from dace.transformation.interstate import (GPUTransformSDFG, HoistState,
-                                            InlineSDFG, StateFusion)
-from dace.transformation.subgraph import MultiExpansion, SubgraphFusion, GPUPersistentKernel
-from dace.transformation.dataflow import (DoubleBuffering, MapCollapse, MapExpansion, MapReduceFusion, StripMining,
-                                          InLocalStorage, AccumulateTransient, Vectorization, MapToForLoop, MapUnroll, MapFusion, MapWCRFusion)
-
-from dace.transformation.interstate import (StateFusion, LoopUnroll, LoopPeeling)
-
-from SDFG_Ax_opt import total_opt_pass
-
+l = dc.symbol('l')
 
 @dc.program()
 def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
@@ -97,30 +75,24 @@ if __name__ == "__main__":
 
     lx_const = [];
     i = int(sys.argv[1])
-    #order = ['I','II','III','IV','V','VI','VII','otto','IX','X']
+
     print('to_sdfg()')
     ax_sdfg = ax_4D.to_sdfg()
     ax_sdfg.name = 'ax'+str(i)
     print('promote lx to', i)
-
     ax_sdfg.replace('lx',str(i))
     print('simplify()')
     #ax_sdfg.simplify()
     print('GPU()')
     
-    ax_sdfg.apply_gpu_transformations()
-    ax_sdfg.apply_transformations(MapExpansion)
-    ax_sdfg.apply_transformations(MapCollapse)
-    ax_sdfg.apply_transformations(MapCollapse)
-    total_opt_pass(ax_sdfg)
-    ax_sdfg.simplify()
-    count = ax_sdfg.apply_transformations(MapFusion) 
-    ax_sdfg.apply_transformations(BufferTiling) # options={'tile_sizes': 128})
-    #assert count > 0
+    #total_opt_pass(ax_sdfg)
+    exp_pass(ax_sdfg)
+    
+
     print('simplify()')
     ax_sdfg.simplify()
     print('validate()')
-    ax_sdfg.validate()
+    #ax_sdfg.validate()
     print('compile()')
     ax_sdfg.compile()
     print('Generating lib', i)
