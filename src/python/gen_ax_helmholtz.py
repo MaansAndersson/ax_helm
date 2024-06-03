@@ -42,11 +42,16 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
         rtmp[e,k,j,i] = 0.0
         stmp[e,k,j,i] = 0.0
         ttmp[e,k,j,i] = 0.0
+        rttmp = 0
+        sttmp = 0
+        tttmp = 0
+
+
         for l in range(lx):
            rtmp[e,k,j,i] = rtmp[e,k,j,i] + dx_d[l,i] * u_d[e,k,j,l]
            stmp[e,k,j,i] = stmp[e,k,j,i] + dy_d[l,j] * u_d[e,k,l,i]
            ttmp[e,k,j,i] = ttmp[e,k,j,i] + dz_d[l,k] * u_d[e,l,j,i] 
-        
+           
         G00 = g11_d[e,k,j,i]
         G01 = g12_d[e,k,j,i]
         G02 = g13_d[e,k,j,i]
@@ -70,7 +75,7 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
 if __name__ == "__main__":                     
  #   
     dc.Config.set('compiler', 'default_data_types', value='C') 
-
+    dc.Config.set('compiler','cuda', 'hip_arch', value = 'gfx90a')
     #dc.Config.set('linker') 
 
     lx_const = [];
@@ -87,7 +92,7 @@ if __name__ == "__main__":
     
     #total_opt_pass(ax_sdfg)
     exp_pass(ax_sdfg)
-    
+    ax_sdfg.replace('tile_e2',str(128))
 
     print('simplify()')
     ax_sdfg.simplify()
