@@ -274,7 +274,7 @@ program nekobench
   end if
   !example us of cg solver
   !init bcs...
-  call dir_bc%init(dm)
+  call dir_bc%init(coef) !dm)
   call dir_bc%set_g(real(0.0d0,rp))
  
   !user specified
