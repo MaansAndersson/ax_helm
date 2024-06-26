@@ -1,4 +1,4 @@
-Requires neko, dace, CUDA, or HIP. 
+Requires Neko, DaCe, and CUDA or HIP. 
 ```
 cd src/python
 python3 gen_ax_hem.py
