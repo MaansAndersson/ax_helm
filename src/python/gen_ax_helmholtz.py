@@ -5,10 +5,10 @@ import numpy as np
 import copy
 from dace.dtypes import StorageType, ScheduleType 
 from SDFG_Ax_opt import (total_opt_pass, exp_pass)
-
+from SDFG_util import unique_label
 
 nel = dc.symbol('ne')
-lx = 8 # dc.symbol('lx')
+lx = dc.symbol('lx')
 lxx = dc.symbol('lxx')
 dtype = dc.float64
 l = dc.symbol('l')
@@ -16,12 +16,12 @@ l = dc.symbol('l')
 @dc.program()
 def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
           u_d   : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
-          dx_d  : dtype[lx,lx]    @ StorageType.GPU_Global,
-          dy_d  : dtype[lx,lx]    @ StorageType.GPU_Global,
-          dz_d  : dtype[lx,lx]    @ StorageType.GPU_Global,
-          dxt_d : dtype[lx,lx]    @ StorageType.GPU_Global,
-          dyt_d : dtype[lx,lx]    @ StorageType.GPU_Global,
-          dzt_d : dtype[lx,lx]    @ StorageType.GPU_Global,
+          dx_d  : dtype[lx,lx]        @ StorageType.GPU_Global,
+          dy_d  : dtype[lx,lx]        @ StorageType.GPU_Global,
+          dz_d  : dtype[lx,lx]        @ StorageType.GPU_Global,
+          dxt_d : dtype[lx,lx]        @ StorageType.GPU_Global,
+          dyt_d : dtype[lx,lx]        @ StorageType.GPU_Global,
+          dzt_d : dtype[lx,lx]        @ StorageType.GPU_Global,
           h1_d  : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
           g11_d : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
           g22_d : dtype[nel,lx,lx,lx] @ StorageType.GPU_Global,
@@ -74,34 +74,49 @@ def ax_4D(w_d   : dtype[nel,lx,lx,lxx] @ StorageType.GPU_Global,
 
 if __name__ == "__main__":                     
  #   
-    dc.Config.set('compiler', 'default_data_types', value='C') 
-    dc.Config.set('compiler','cuda', 'hip_arch', value = 'gfx90a')
+    #dc.Config.set('compiler', 'default_data_types', value='C') 
+    #dc.Config.set('compiler','cuda', 'hip_arch', value = 'gfx90a')
     #dc.Config.set('linker') 
 
     lx_const = [];
-    i = int(sys.argv[1])
+    N = int(sys.argv[1])
+    for i in range(1,N+1):
+        print('to_sdfg()')
+        ax_sdfg = ax_4D.to_sdfg()
+        ax_sdfg.name = 'ax'+str(i)
 
-    print('to_sdfg()')
-    ax_sdfg = ax_4D.to_sdfg()
-    ax_sdfg.name = 'ax'+str(i)
-    print('promote lx to', i)
-    ax_sdfg.replace('lx',str(i))
-    print('simplify()')
-    #ax_sdfg.simplify()
-    print('GPU()')
-    
-    #total_opt_pass(ax_sdfg)
-    exp_pass(ax_sdfg)
-    ax_sdfg.replace('tile_e2',str(128))
+        #set unique label
 
-    print('simplify()')
-    ax_sdfg.simplify()
-    print('validate()')
-    #ax_sdfg.validate()
-    print('compile()')
-    ax_sdfg.compile()
-    print('Generating lib', i)
-    del ax_sdfg
+
+
+        print('promote lx to', i)
+        ax_sdfg.replace('lx',str(i))
+        print('simplify()')
+        #ax_sdfg.simplify()
+        print('GPU()')
+
+        total_opt_pass(ax_sdfg)
+#        exp_pass(ax_sdfg)
+#        ax_sdfg.replace('tile_e2',str(128))
+
+        print('simplify()')
+        ax_sdfg.simplify()
+        print('validate()')
+        ax_sdfg.validate()
+        print('save_sdfg()')
+
+        #from dace.codegen.targets.cuda import CUDACodeGen
+        #code = CUDACodeGen(ax_sdfg).get_generated_codeobjects()
+        #with open(f"axpy.c", "w") as fd:
+        #  fd.write(code)
+        #with open(f"axpy.h", "w") as fd:
+        #  fd.write(header)
+
+        unique_label(ax_sdfg,"ax_4D","ax_label"+str(i))
+        ax_sdfg.save('../sdfg/ax_'+str(i)+'.sdfg.gz')
+        #ax_sdfg.compile()
+        #print('Generating lib', i)
+        del ax_sdfg
 
 
 

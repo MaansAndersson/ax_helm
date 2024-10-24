@@ -23,7 +23,7 @@ module dace_math
 
    interface  
      type(c_ptr) function hidden__dace_add3s2_init(ne) &
-             bind(c, name='__dace_init_add3s2') 
+             bind(c, name='init_add3s2') 
              use, intrinsic :: iso_c_binding
              type(c_ptr) :: handle
              integer(c_int) :: ne
@@ -32,7 +32,7 @@ module dace_math
 
    interface 
      subroutine hidden__dace_add3s2_delete(handle_add3s2) & 
-             bind(c, name='__dace_exit_add3s2') 
+             bind(c, name='delete_add3s2') 
              use, intrinsic :: iso_c_binding 
              type(c_ptr), value :: handle_add3s2
      end subroutine hidden__dace_add3s2_delete
@@ -42,7 +42,7 @@ module dace_math
    ! between the Python script and the SDFG generated code.
    interface
      subroutine hidden__dace_device_add3s2(handle, a, b, c, ne, c0, c1) &
-       bind(c, name='__program_add3s2')
+       bind(c, name='eval_add3s2')
        use, intrinsic :: iso_c_binding
        import c_rp
        type(c_ptr), value :: handle
@@ -69,7 +69,7 @@ contains
     integer, intent(in) :: ne
     handle_add3s2 = hidden__dace_add3s2_init(ne) 
   end subroutine dace_add3s2_init
-  
+
   subroutine dace_add3s2_free()
     call hidden__dace_add3s2_delete(handle_add3s2)
   end subroutine dace_add3s2_free

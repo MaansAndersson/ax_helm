@@ -38,4 +38,6 @@ if __name__ == "__main__":
     print('Validate()')
     _sdfg.validate()
     print('Compile()')
+
+    _sdfg.save('math.sdfg')
     _sdfg.compile()

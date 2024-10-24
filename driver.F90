@@ -49,8 +49,6 @@ contains
     enddo
   end subroutine set_bc
 
-
-
 end module setup
 
 
@@ -59,15 +57,7 @@ program nekobench
   use dace_ax_helm_device
   use setup
   use dace_math
-!  use ax8mod
-!  use ax7mod
-!  use ax6mod
-!  use ax5mod
-!  use ax4mod
-!  use ax3mod
-!  use ax2mod
-!  use ax1mod
-  
+
   implicit none
 
   character(len=NEKO_FNAME_LEN) :: fname, lxchar
@@ -171,7 +161,7 @@ program nekobench
   f2 = 1.0_rp
   f3 = 1.0_rp
   c1 = 2.0_rp
-  c2 = 1.0_rp
+  c2 = 3.0_rp
   
   call dace_add3s2_init(dm%size())
   
@@ -187,7 +177,7 @@ program nekobench
           !if (i .eq. 1) print *, niter*0.25*device_glsc2(f1%x_d,f1%x_d,dm%size())
         else 
           call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
-        end if 
+        end if
     else
         call add3s2(f1%x,f2%x,f3%x,c1,c2,dm%size())
      end if
@@ -199,7 +189,7 @@ program nekobench
   if (NEKO_BCKND_DEVICE .eq. 1) then
      print *, "norm of ||add3s2 f2||, L2 norm squared", device_glsc2(f1%x_d,f1%x_d,n)
   else
-     print *, "norm of ||add3s2 f2||, L2 norm squared", glsc2(f2%x,f2%x,n)
+     print *, "norm of ||add3s2 f2||, L2 norm squared", glsc2(f1%x,f1%x,n)
   end if
 
   time = t1 - t0
@@ -224,20 +214,21 @@ program nekobench
   call uttmp%init(dm)
 
   call device_sync()
-  
-  call dace_ax_helm_device_init(Xh%lx, msh%nelv) !, rtmp%x_d, stmp%x_d, ttmp%x_d, urtmp%x_d, ustmp%x_d, uttmp%x_d)
+
+  call dace_ax_helm_device_init(Xh%lx, msh%nelv)
   call device_sync()
   call set_f(f1%x,f1%dof)
   if(NEKO_BCKND_DEVICE .eq. 1) call device_memcpy(f1%x, f1%x_d, n, HOST_TO_DEVICE,sync=.true.) 
-   
   call device_sync()
-  
+
   !Benchmark Ax, lets not overengineer this...
   ! To not time the autotune...
-  if (bcknd .eq. 0) then  
-     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
-  else 
-     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
+  if (bcknd .eq. 0) then
+     print *, " "
+     print *, "---No tuning---"
+     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
+  else
+     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
   end if
 
   call device_sync()
@@ -251,10 +242,10 @@ program nekobench
   t0 = MPI_Wtime()
   !h1, h2 are initialized to something
   do i = 1, niter
-  if (bcknd .eq. 0) then  
-     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
-  else 
-     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)       
+  if (bcknd .eq. 0) then
+     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
+  else
+     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
   end if
 
   end do
@@ -276,19 +267,19 @@ program nekobench
   !init bcs...
   call dir_bc%init(coef) !dm)
   call dir_bc%set_g(real(0.0d0,rp))
- 
+
   !user specified
   call set_bc(dir_bc, msh)
- 
+
   call dir_bc%finalize()
   call bc_list_init(bclst)
   call bc_list_add(bclst,dir_bc)
 
-  if (bcknd .eq. 0) then  
+  if (bcknd .eq. 0) then
   ksp_mon = solver%solve(dace_ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
-  else 
+  else
   ksp_mon = solver%solve(ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
-  end if 
+  end if
 
   if (NEKO_BCKND_DEVICE .eq. 1) &
      call device_memcpy(f2%x, f2%x_d, n, DEVICE_TO_HOST, sync=.true.)
