@@ -1,13 +1,11 @@
 Requires Neko, DaCe, and CUDA or HIP. 
 ```
-cd src/python
-python3 gen_ax_hem.py
-```
-`setup.sh` assumes neko in `$PWD/../neko/neko_install`
+`setup.sh` assumes neko in `submodules/neko/neko_install` 
+Does no assumtion on `DACE_PATH` 
 ```
 . setup.sh 
 make clean
-make nekobench
+make all
 ```
 
 To run dace backend 
