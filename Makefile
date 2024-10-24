@@ -23,6 +23,8 @@ dace_libs_3 := $(foreach wrd,$(foo),-l$(wrd))
 $(DEST): mv_obj 
 	$(FC) $(FCLAGS) ${OBJ} -o $@ $(LIBS) $(dace_libs_2) $(dace_libs_3)
 
+all: sdfg slib $(DEST)
+
 mv_obj: $(OBJ)
 	mv *dace*.o ${SRC_PATH}
 	
