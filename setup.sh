@@ -5,8 +5,7 @@
 export DACE_compiler_cpu_executable=/usr/bin/clang++
 NEKO_PATH=submodules/neko/install_neko
 JSONFORTRAN_PATH=submodules/json-fortran/install_jsonfortran
-#DACE_PATH=
-
+export DACE_PATH=/home/mansande/Develop/scivenv/lib/python3.12/site-packages/dace/runtime/
 
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$PWD/$JSONFORTRAN_PATH/lib/pkgconfig
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$PWD/$NEKO_PATH/lib/pkgconfig

@@ -1,29 +1,19 @@
-
 #clang++ -shared -O3 ax.cpp -lax1 -lax2 -lax3 -lax4 -lax5 -lax6 -lax7 -lax8 -ladd3s2 -I $PWD/include/ -I $PWD/../../../../scivenv/lib/python3.12/site-packages/dace/runtime/include/ -L $PWD/build/ -o build/libax.so
-
-IDIR =include
-DACE_DIR=-I $PWD/../../../../scivenv/lib/python3.12/site-packages/dace/runtime/include/
-
-CC=gcc
+IDIR=include
+DACE_DIR=-I ${DACE_PATH}/include
+##DACE_DIR=-I /home/mansande/Develop/scivenv/lib/python3.12/site-packages/dace/runtime/include
+CXX=clang++
 SDFGCC=sdfgcc
-CFLAGS=-I$(IDIR)
 
-ODIR=obj
-LDIR =lib
-
+LDIR=lib
 LIBS=-lm -lax2 -lax3 -lax4 -lax5 -lax6 -lax7 -lax8 -ladd3s2
 
+all:
+	sdfg
+	slib
 
-#_DEPS = ax.h
-#DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
-#
-#_OBJ = ax.o 
-#OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-
-AXX=ax.cpp
-
-$(ODIR)/%.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+slib:
+	$(CXX) -shared -O3 ax.cpp -lax2 -lax3 -lax4 -lax5 -lax6 -lax7 -lax8 -ladd3s2 -I ${IDIR} ${DACE_DIR} -L ${LDIR} -o ${LDIR}/libax.so
 
 sdfg:
 	$(SDFGCC) ../sdfg/ax_2.sdfg.gz -o .
@@ -34,16 +24,12 @@ sdfg:
 	$(SDFGCC) ../sdfg/ax_7.sdfg.gz -o .
 	$(SDFGCC) ../sdfg/ax_8.sdfg.gz -o .
 	$(SDFGCC) ../sdfg/add3s2.sdfg.gz -o .
-#$(SDFGCC) ../sdfg/ax*.sdfg.gz
-	mv *so lib
-	mv *h include
+	mv *so $(LDIR)
+	mv *h $(IDIR)
 
-
-make: sdfg
-	$(CC) -o -shared $(AXX) $(LIBS)
-	# $@ $^ $(CFLAGS) $(LIBS) 
 
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
+	rm -f $(LDIR)/*.so
+	#rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~

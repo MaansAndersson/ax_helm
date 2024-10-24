@@ -20,6 +20,9 @@ dace_libs_2 := $(foreach wrd,$(foo),-L${AX_PATH}/lib)
 dace_libs_3 := $(foreach wrd,$(foo),-l$(wrd)) 
 #dace_libs_4 := -lallax
 
+$(DEST): mv_obj 
+	$(FC) $(FCLAGS) ${OBJ} -o $@ $(LIBS) $(dace_libs_2) $(dace_libs_3)
+
 mv_obj: $(OBJ)
 	mv *dace*.o ${SRC_PATH}
 	
@@ -31,8 +34,13 @@ mod:
 clean:
 	-rm -f *.o core *.core *.mod out0.* $(OBJ) $(DEST)
 
-$(DEST): mv_obj
-	$(FC) $(FCLAGS) ${OBJ} -o $@ $(LIBS) $(dace_libs_2) $(dace_libs_3)
+sdfg:
+	make -C src/cpp sdfg
+
+slib:
+	make -C src/cpp slib
+
+make: $(DEST)
 
 %.o: %.F90
 	${FC} ${FCLAGS} -c $<

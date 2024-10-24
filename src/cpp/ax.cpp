@@ -1,4 +1,4 @@
-#include "include/ax.h"
+#include "include/ax.hpp"
 #include "include/add3s2.h"
 
 #include <cstdio>
