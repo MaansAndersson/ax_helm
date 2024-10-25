@@ -10,8 +10,7 @@ contains
     real(kind=rp) :: dx, dy, dz
     real(kind=rp), parameter :: arg = 2d0
     integer :: i, idx(4)
-   
-    
+
     do i = 1, dm%size()
        idx = nonlinear_index(i, dm%Xh%lx, dm%Xh%ly, dm%Xh%lz)
        dx = dm%x(idx(1), idx(2), idx(3), idx(4)) - 4.0d0
@@ -54,9 +53,9 @@ end module setup
 
 program nekobench
   use neko
-  use dace_ax_helm_device
   use setup
   use dace_math
+  use dace_ax_helm_device
 
   implicit none
 
@@ -275,12 +274,18 @@ program nekobench
   call bc_list_init(bclst)
   call bc_list_add(bclst,dir_bc)
 
+  f2 = 1.0_rp
+
   if (bcknd .eq. 0) then
   ksp_mon = solver%solve(dace_ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
   else
   ksp_mon = solver%solve(ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
   end if
-
+  
+  write(*,*) ksp_mon%iter, &
+         ksp_mon%res_start, &
+         ksp_mon%res_final
+ 
   if (NEKO_BCKND_DEVICE .eq. 1) &
      call device_memcpy(f2%x, f2%x_d, n, DEVICE_TO_HOST, sync=.true.)
   ! Store the solution
