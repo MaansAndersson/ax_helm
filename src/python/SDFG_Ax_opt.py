@@ -42,14 +42,14 @@ def add_local_storage(sdfg: dc.SDFG):
     smem_b = InLocalStorage.apply_to(sdfg, dict(array='B'), node_a=ktile, node_b=btile)
     sdfg.arrays[smem_a.data].storage = dace.StorageType.GPU_Shared
     sdfg.arrays[smem_b.data].storage = dace.StorageType.GPU_Shared
-    return sdfg 
+    return sdfg
 
 def transient_reuse():
     return sdfg
 
 
 def total_opt_pass(sdfg : dc.SDFG):
-    print('total opt pass') 
+    print('total opt pass')
     sdfg.apply_gpu_transformations()
     sdfg.apply_transformations(MapExpansion)
     MapCollapse.apply_to(sdfg, outer_map_entry=find_map_by_param(sdfg, 'k'),
@@ -63,7 +63,6 @@ def total_opt_pass(sdfg : dc.SDFG):
                        'g11_d', 'g12_d', 'g13_d', 'g22_d', 'g23_d', 'g33_d', 'h1_d']
     for data in data_containers:
         InLocalStorage.apply_to(sdfg, dict(array=data), node_a=entry, node_b=exit) 
-   
     ## Section 2 
     entry = find_map_by_param(sdfg, 'e2')
     MapExpansion.apply_to(sdfg, map_entry=entry)
@@ -130,12 +129,11 @@ def exp_pass(sdfg : dc.SDFG):
     entry = find_map_by_param(sdfg, 'tile_e')
     exit  = find_map_by_param(sdfg, 'e')
     data_containers = ['uttmp','ustmp','urtmp']
-                       
-    
+
+
     for data in data_containers: 
         InLocalStorage.apply_to(sdfg, dict(array=data), node_a=entry, node_b=exit) 
     sdfg.add_symbol('tile_e2', stype=dc.int32) 
-        
     sdfg.apply_transformations(MapFusion)
 
     #sdfg.apply_transformations(BufferTiling)
