@@ -63,7 +63,6 @@ void eval_ax(axHandle_t handle, double * dx_d, double * dxt_d, double * dy_d, do
   };
 }
 
-// What the fuck is happening here?
 void del_ax(axHandle_t handle){
  int err;
  int lx = 8;
