@@ -8,11 +8,11 @@ LIBS    = `pkg-config --libs neko`
 FC      = `pkg-config --variable=compiler neko`
 
 DEST    = nekobench
-SRC		 	= ${SRC_PATH}/dace_ax.F90 \
-					${SRC_PATH}/dace_math.F90\
-					${SRC_PATH}/dace_ax_helm_device.F90 driver.F90
+SRC     = ${SRC_PATH}/dace_ax.F90 \
+          ${SRC_PATH}/dace_math.F90\
+          ${SRC_PATH}/dace_ax_helm_device.F90 driver.F90
 
-OBJ		 	= ${SRC:.F90=.o}
+OBJ     = ${SRC:.F90=.o}
 
 foo := ax #add3s2
 dace_libs_1 := $(foreach wrd,$(foo),-I${AX_PATH}/include) 
