@@ -27,8 +27,6 @@ all: sdfg slib $(DEST)
 
 mv_obj: $(OBJ)
 	mv *dace*.o ${SRC_PATH}
-	
-install:
 
 mod:
 	-rm -f *.mod
