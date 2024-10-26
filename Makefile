@@ -1,5 +1,3 @@
-##DACE_PATH =/afs/pdc.kth.se/home/m/mansande/.local/lib/python3.9/site-packages/dace
-
 SRC_PATH=${PWD}/src/fortran
 AX_PATH=${PWD}/src/cpp
 
