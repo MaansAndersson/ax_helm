@@ -14,13 +14,12 @@ SRC     = ${SRC_PATH}/dace_ax.F90 \
 
 OBJ     = ${SRC:.F90=.o}
 
-foo := ax #add3s2
+foo := ax
 dace_libs_1 := $(foreach wrd,$(foo),-I${AX_PATH}/include) 
 dace_libs_2 := $(foreach wrd,$(foo),-L${AX_PATH}/lib) 
 dace_libs_3 := $(foreach wrd,$(foo),-l$(wrd)) 
-#dace_libs_4 := -lallax
 
-$(DEST): mv_obj 
+$(DEST): mv_obj
 	$(FC) $(FCLAGS) ${OBJ} -o $@ $(LIBS) $(dace_libs_2) $(dace_libs_3)
 
 all: sdfg slib $(DEST)
