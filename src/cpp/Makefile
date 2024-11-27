@@ -13,7 +13,7 @@ all:
 	slib
 
 slib:
-	$(CXX) -shared -O3 ax.cpp -lax2 -lax3 -lax4 -lax5 -lax6 -lax7 -lax8 -ladd3s2 -I ${IDIR} ${DACE_DIR} -L ${LDIR} -o ${LDIR}/libax.so
+	$(CXX) -shared -O3 ax.cpp ${LIBS} -I ${IDIR} ${DACE_DIR} -L ${LDIR} -o ${LDIR}/libax.so
 
 sdfg:
 	$(SDFGCC) ../sdfg/ax_2.sdfg.gz -o .
