@@ -8,7 +8,9 @@ FC      = `pkg-config --variable=compiler neko`
 DEST    = nekobench
 SRC     = ${SRC_PATH}/wrapper/dace_ax.F90 \
           ${SRC_PATH}/wrapper/dace_math.F90\
-          ${SRC_PATH}/wrapper/dace_ax_helm_device.F90 driver.F90\
+          ${SRC_PATH}/wrapper/dace_ax_helm_device.F90\
+					${SRC_PATH}/straggler/pc_inexact.F90 \
+					driver.F90\
 
 OBJ     = ${SRC:.F90=.o}
 
@@ -24,6 +26,7 @@ all: sdfg slib $(DEST)
 
 mv_obj: $(OBJ)
 	mv *dace*.o ${SRC_PATH}/wrapper
+	mv *inexact_pc*.o ${SRC_PATH}/straggler
 
 mod:
 	-rm -f *.mod

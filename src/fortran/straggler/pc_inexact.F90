@@ -3,16 +3,17 @@
 module inexact_pc
   !use math, only copy
   use precon, only : pc_t
-  use ksp, only : ksp_t
-  !use num_types, only : rp
+  use krylov, only : ksp_t
+  use num_types, only : rp
   implicit none
   private 
 
   type, public, extends(pc_t) :: inexact_t
+    !This must be added :) 
     !type(gs_t), pointer :: gs_h
     !type(dofmap_t), pointer :: dof
     !type(coef_t), pointer :: coef
-    type(ksp_t), pointer :: M
+    type(ksp_t), pointer :: M !allocatable?
     contains 
       procedure, pass(this) :: init ==> inexact_init
       procedure, pass(this) :: solve ==> inexact_solve
@@ -30,6 +31,7 @@ subroutine inexact_solve(this, z, r, n)
   real(kind=rp), dimension(n), intent(inout) :: r
 
   call this%M%solve(z, r, n)
+              !solve(ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
 end subroutine inexact_solve
 
 !> Mandatory update routine
@@ -49,4 +51,4 @@ subroutine inexact_init(this, M)
   this%M => M
 end subroutine
 
-end module
+end module inexact_pc
