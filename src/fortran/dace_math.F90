@@ -4,7 +4,7 @@ module dace_math
   use device, only : device_get_ptr
   implicit none 
   type(c_ptr) :: handle_add3s2
-         
+
 !  !> Returns \f$ a = c1 * b + c2 * c \f$
 !  subroutine add3s2(a, b, c, c1, c2 ,n)
 !    integer, intent(in) :: n
@@ -59,9 +59,6 @@ contains
        real(kind=rp), intent(inout) :: c0, c1
        integer, intent(in) :: ne
        type(c_ptr) :: d_a, d_b, d_c
-    !d_a=device_get_ptr(a) 
-    !d_b=device_get_ptr(b) 
-    !d_c=device_get_ptr(c)   
     call hidden__dace_device_add3s2(handle_add3s2, d_a, d_b, d_c, ne, c0, c1) 
   end subroutine dace_add3s2
 

@@ -1,7 +1,5 @@
-#clang++ -shared -O3 ax.cpp -lax1 -lax2 -lax3 -lax4 -lax5 -lax6 -lax7 -lax8 -ladd3s2 -I $PWD/include/ -I $PWD/../../../../scivenv/lib/python3.12/site-packages/dace/runtime/include/ -L $PWD/build/ -o build/libax.so
 IDIR=include
 DACE_DIR=-I ${DACE_PATH}/include
-##DACE_DIR=-I /home/mansande/Develop/scivenv/lib/python3.12/site-packages/dace/runtime/include
 CXX=clang++
 SDFGCC=sdfgcc
 
@@ -33,4 +31,3 @@ sdfg:
 
 clean:
 	rm -f $(LDIR)/*.so
-	#rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~
