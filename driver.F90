@@ -25,25 +25,25 @@ contains
     type(mesh_t), intent(in) :: msh
     type(dirichlet_t), intent(inout) :: bc_
     integer :: i
-  
+
     do i = 1, msh%nelv
        if (msh%facet_neigh(1, i) .eq. 0) then
-         call bc_%mark_facet(1, i) 
+         call bc_%mark_facet(1, i)
        end if
        if (msh%facet_neigh(2, i) .eq. 0) then
-         call bc_%mark_facet(2, i) 
+         call bc_%mark_facet(2, i)
        end if
        if (msh%facet_neigh(3, i) .eq. 0) then
-         call bc_%mark_facet(3, i) 
+         call bc_%mark_facet(3, i)
        end if
        if (msh%facet_neigh(4, i) .eq. 0) then
-         call bc_%mark_facet(4, i) 
+         call bc_%mark_facet(4, i)
        end if
        if (msh%facet_neigh(5, i) .eq. 0) then
-         call bc_%mark_facet(5, i) 
+         call bc_%mark_facet(5, i)
        end if
        if (msh%facet_neigh(6, i) .eq. 0) then
-         call bc_%mark_facet(6, i) 
+         call bc_%mark_facet(6, i)
        end if
     enddo
   end subroutine set_bc
@@ -80,7 +80,6 @@ program nekobench
   ! Dace
   class(dace_ax_helm_device_t), allocatable :: dace_ax_helm
   !type(c_ptr) :: handle_add3s2
-  type(field_t) :: stmp, rtmp, ttmp, urtmp, ustmp, uttmp !temporary  
   argc = command_argument_count()
 
   if ((argc .lt. 4) .or. (argc .gt. 4)) then
@@ -115,7 +114,7 @@ program nekobench
   
   allocate(dace_ax_helm)
 
-  abstol = 1e-12 ! SOmething small so we dont converge
+  abstol = 1e-12 ! Something small so we dont converge
   call krylov_solver_factory(solver, dm%size(), 'cg', niter, abstol)
   n_tot = dble(msh%glb_nelv)*dble(niter)*dble(Xh%lxyz) 
   n = dm%size()
@@ -205,15 +204,6 @@ program nekobench
 
   call device_sync()
 
-  call stmp%init(dm) 
-  call rtmp%init(dm) 
-  call ttmp%init(dm) 
-  call urtmp%init(dm)
-  call ustmp%init(dm)
-  call uttmp%init(dm)
-
-  call device_sync()
-
   call dace_ax_helm_device_init(Xh%lx, msh%nelv)
   call device_sync()
   call set_f(f1%x,f1%dof)
@@ -281,11 +271,11 @@ program nekobench
   else
   ksp_mon = solver%solve(ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
   end if
-  
+
   write(*,*) ksp_mon%iter, &
          ksp_mon%res_start, &
          ksp_mon%res_final
- 
+
   if (NEKO_BCKND_DEVICE .eq. 1) &
      call device_memcpy(f2%x, f2%x_d, n, DEVICE_TO_HOST, sync=.true.)
   ! Store the solution
@@ -293,7 +283,7 @@ program nekobench
   mf = file_t(fname)
   call mf%write(f2)
 
-  call neko_finalize  
+  call neko_finalize
 
 end program nekobench
 
