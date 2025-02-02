@@ -1,42 +1,78 @@
+!> Module for reusing linear solvers as preconditioner.
+!! Used with FMGRES or BiCGSTAB.
 
 !> Krylov preconditioner (using Krylov solver)
 module inexact_pc
   !use math, only copy
   use precon, only : pc_t
-  use krylov, only : ksp_t
+  use coefs, only : coef_t
   use num_types, only : rp
+  use dofmap
+  use gather_scatter
+  use krylov !: ksp_t, ksp_monitor_t
+  use field, only : field_t
+  use ax_helm, only : ax_helm_t
+
   implicit none
-  private 
+  private
 
   type, public, extends(pc_t) :: inexact_t
-    !This must be added :) 
-    !type(gs_t), pointer :: gs_h
-    !type(dofmap_t), pointer :: dof
-    !type(coef_t), pointer :: coef
-    type(ksp_t), pointer :: M !allocatable?
-    contains 
-      procedure, pass(this) :: init ==> inexact_init
-      procedure, pass(this) :: solve ==> inexact_solve
-      procedure, pass(this) :: update ==> inexact_update
-
+    type(gs_t), pointer :: gs_h
+    type(dofmap_t), pointer :: dof
+    type(coef_t), pointer :: coef
+    type(ax_helm_t), pointer :: ax_helm
+    class(ksp_t), pointer :: M => null() !allocatable?
+    contains
+      procedure, pass(this) :: init => inexact_init
+      procedure, pass(this) :: solve => inexact_solve
+      procedure, pass(this) :: update => inexact_update
+      !procedure, pass(this) :: free => inexact_free
   end type inexact_t
 
 contains
 
 !> The preconditioner \f$ M z = r \f$ solved with some inexact solver
-subroutine inexact_solve(this, z, r, n)
-  integer, intent(in) :: n
-  class(inexact_t), intent(inout) :: this
-  real(kind=rp), dimension(n), intent(inout) :: z
-  real(kind=rp), dimension(n), intent(inout) :: r
+  subroutine inexact_solve(this, z, r, n)
+    class(inexact_t), intent(inout) :: this
+    integer, intent(in) :: n
+    real(kind=rp), dimension(n), intent(inout) :: z
+    real(kind=rp), dimension(n), intent(inout) :: r
+    type(ksp_monitor_t) :: ksp_mon
 
-  call this%M%solve(z, r, n)
-              !solve(ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
-end subroutine inexact_solve
+    !move to global?
+    type(field_t) :: temp_field
+    type(ax_helm_t) :: ax_helm
+
+    !ksp_mon = this%M%solve(z, r, n)
+    !ax_helm
+    !this%dm%size()
+    !this%bclst
+
+    !temp_field%x = 0
+    !ksp_mon = this%M%solve(ax_helm, temp_field, r, 10, this%coef, 1, this%gs_h, 100)
+    !z = temp_field%x
+  end subroutine inexact_solve
+
+!> Init
+  subroutine inexact_init(this, ax_helm, M, coef, dof, gs_h)
+    class(inexact_t), intent(inout) :: this
+    type(ax_helm_t), intent(in), target :: ax_helm
+    class(ksp_t), intent(in), target :: M
+    type(gs_t), intent(in), target :: gs_h
+    type(dofmap_t), intent(in), target :: dof
+    type(coef_t), intent(in), target :: coef
+
+    !call this%free()
+    this%ax_helm => ax_helm
+    this%M => M
+    this%gs_h => gs_h
+    this%dof => dof
+    this%coef => coef
+  end subroutine
 
 !> Mandatory update routine
-subroutine inexact_update(this)
-  class(inexact_t), intent(inout) :: this
+  subroutine inexact_update(this)
+    class(inexact_t), intent(inout) :: this
   ! this%grids(1)%coef%ifh2 = .false.
   !  call copy(this%grids(1)%coef%h1, this%grids(3)%coef%h1, &
   !       this%grids(1)%dof%size())
@@ -44,11 +80,6 @@ subroutine inexact_update(this)
   !     call device_copy(this%grids(1)%coef%h1_d, this%grids(3)%coef%h1_d, &
   !          this%grids(1)%dof%size())
   !  end if
-end subroutine inexact_update
-
-subroutine inexact_init(this, M)
-  class(ksp_t), intent(in) :: M
-  this%M => M
-end subroutine
+  end subroutine inexact_update
 
 end module inexact_pc
