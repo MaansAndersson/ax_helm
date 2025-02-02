@@ -1,17 +1,24 @@
 !> Module for reusing linear solvers as preconditioner.
+!!
 !! Used with FMGRES or BiCGSTAB.
 
 !> Krylov preconditioner (using Krylov solver)
 module inexact_pc
-  !use math, only copy
-  use precon, only : pc_t
-  use coefs, only : coef_t
-  use num_types, only : rp
-  use dofmap
-  use gather_scatter
-  use krylov !: ksp_t, ksp_monitor_t
-  use field, only : field_t
+  use neko
+
+  !use math, only : copy
+  !use precon, only : pc_t
+  !use coefs, only : coef_t
+  !use num_types, only : rp
+  !use field, only : field_t
   use ax_helm, only : ax_helm_t
+  !use dofmap
+  !use gather_scatter
+  !use krylov
+  
+  !use device, only : device_get_ptr
+  !use bc_list !, only : bc_list_t
+
 
   implicit none
   private
@@ -20,8 +27,10 @@ module inexact_pc
     type(gs_t), pointer :: gs_h
     type(dofmap_t), pointer :: dof
     type(coef_t), pointer :: coef
+    type(bc_list_t), pointer :: bclst
     type(ax_helm_t), pointer :: ax_helm
     class(ksp_t), pointer :: M => null() !allocatable?
+    type(field_t), pointer :: temp_field
     contains
       procedure, pass(this) :: init => inexact_init
       procedure, pass(this) :: solve => inexact_solve
@@ -38,31 +47,43 @@ contains
     real(kind=rp), dimension(n), intent(inout) :: z
     real(kind=rp), dimension(n), intent(inout) :: r
     type(ksp_monitor_t) :: ksp_mon
-
-    !move to global?
-    type(field_t) :: temp_field
     type(ax_helm_t) :: ax_helm
+    
+    type(c_ptr) :: z_d, r_d
 
-    !ksp_mon = this%M%solve(z, r, n)
-    !ax_helm
-    !this%dm%size()
     !this%bclst
+    this%temp_field%x = 0.0_rp
+    ksp_mon = this%M%solve(ax_helm, this%temp_field, r, n, this%coef, this%bclst, this%gs_h, 100)
+    
+    ! device it? 
+    !call copy(z, this%temp_field%x, n)
 
-    !temp_field%x = 0
-    !ksp_mon = this%M%solve(ax_helm, temp_field, r, 10, this%coef, 1, this%gs_h, 100)
-    !z = temp_field%x
+    if (NEKO_BCKND_DEVICE .eq. 1) then
+      z_d = device_get_ptr(z)
+      call device_copy(z_d, this%temp_field%x_d, n)
+    else
+      call copy(z, this%temp_field%x, n)
+    end if
   end subroutine inexact_solve
 
 !> Init
-  subroutine inexact_init(this, ax_helm, M, coef, dof, gs_h)
+  subroutine inexact_init(this, ax_helm, M, coef, dof, gs_h, bclst)
     class(inexact_t), intent(inout) :: this
     type(ax_helm_t), intent(in), target :: ax_helm
     class(ksp_t), intent(in), target :: M
     type(gs_t), intent(in), target :: gs_h
     type(dofmap_t), intent(in), target :: dof
     type(coef_t), intent(in), target :: coef
+    type(bc_list_t), intent(in), target :: bclst
 
-    !call this%free()
+    ! Is this correct?
+    type(field_t), target :: temp_field1
+    this%bclst => bclst
+
+    call temp_field1%init(dof)
+    this%temp_field => temp_field1
+
+
     this%ax_helm => ax_helm
     this%M => M
     this%gs_h => gs_h
@@ -71,6 +92,7 @@ contains
   end subroutine
 
 !> Mandatory update routine
+!! Should probably update BCs, tolerance etc.
   subroutine inexact_update(this)
     class(inexact_t), intent(inout) :: this
   ! this%grids(1)%coef%ifh2 = .false.
