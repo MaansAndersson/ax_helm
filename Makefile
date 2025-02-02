@@ -6,16 +6,16 @@ LIBS    = `pkg-config --libs neko`
 FC      = `pkg-config --variable=compiler neko`
 
 DEST    = nekobench
-SRC     = ${SRC_PATH}/dace_ax.F90 \
-          ${SRC_PATH}/dace_math.F90\
-          ${SRC_PATH}/dace_ax_helm_device.F90 driver.F90
+SRC     = ${SRC_PATH}/wrapper/dace_ax.F90 \
+          ${SRC_PATH}/wrapper/dace_math.F90\
+          ${SRC_PATH}/wrapper/dace_ax_helm_device.F90 driver.F90\
 
 OBJ     = ${SRC:.F90=.o}
 
-foo := ax
-dace_libs_1 := $(foreach wrd,$(foo),-I${AX_PATH}/include) 
-dace_libs_2 := $(foreach wrd,$(foo),-L${AX_PATH}/lib) 
-dace_libs_3 := $(foreach wrd,$(foo),-l$(wrd)) 
+lib := ax
+dace_libs_1 := $(foreach wrd,$(lib),-I${AX_PATH}/include) 
+dace_libs_2 := $(foreach wrd,$(lib),-L${AX_PATH}/lib) 
+dace_libs_3 := $(foreach wrd,$(lib),-l$(wrd)) 
 
 $(DEST): mv_obj
 	$(FC) $(FCLAGS) ${OBJ} -o $@ $(LIBS) $(dace_libs_2) $(dace_libs_3)
@@ -23,7 +23,7 @@ $(DEST): mv_obj
 all: sdfg slib $(DEST)
 
 mv_obj: $(OBJ)
-	mv *dace*.o ${SRC_PATH}
+	mv *dace*.o ${SRC_PATH}/wrapper
 
 mod:
 	-rm -f *.mod

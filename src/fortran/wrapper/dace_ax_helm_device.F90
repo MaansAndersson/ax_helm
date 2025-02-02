@@ -46,12 +46,17 @@ module dace_ax_helm_device
   implicit none
   type(c_ptr) :: handle
 
-  type, public, extends(ax_t) :: dace_ax_helm_device_t
+  type, abstract, extends(ax_t) :: dace_ax_t
    contains
-     procedure, nopass :: compute => dace_ax_helm_device_compute 
+     procedure, nopass :: compute => dace_ax_helm_device_compute
+  !   procedure, pass(this) :: compute_vector => ax_helm_device_compute_vector
   !   procedure, nopass :: init => dace_ax_helm_device_init
   !   procedure, nopass :: free => dace_ax_helm_device_free
+  end type dace_ax_t
+
+  type, public, extends(dace_ax_t) :: dace_ax_helm_device_t
   end type dace_ax_helm_device_t
+
 
   interface
     subroutine dace_ax_helm_device_delete(handle) &
@@ -69,15 +74,10 @@ contains
     real(kind=rp), intent(inout) :: w(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
     real(kind=rp), intent(inout) :: u(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
     type(c_ptr) :: u_d, w_d
-    !write(*,*) 'compute()'
-    !handle = this%get_handle()
 
-    !write (*,*) handle
     u_d = device_get_ptr(u)
     w_d = device_get_ptr(w)
 
-    !print *, loc(u_d)
-    !print *, u_d
     call dace_ax_helm_device_evaluate_CPP(handle, &
          Xh%dx_d, Xh%dxt_d, &
          Xh%dy_d, Xh%dyt_d, &
@@ -95,16 +95,13 @@ contains
 
   subroutine dace_ax_helm_device_init(lx, ne)
     integer, intent(inout) :: lx, ne
-    !write (*,*) lx
-    !write (*,*) handle
     handle = dace_ax_init(lx,ne)
-    !write (*,*) handle
 
   end subroutine dace_ax_helm_device_init
 
   subroutine dace_ax_helm_device_free(lx)
     integer :: lx
     call dace_ax_helm_device_delete(handle)
-  end subroutine 
+  end subroutine
 
 end module dace_ax_helm_device
