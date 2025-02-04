@@ -50,19 +50,15 @@ contains
     type(ksp_monitor_t) :: ksp_mon
     type(c_ptr) :: z_d, r_d
 
-    !this%bclst
-    !this%temp_field = 0.0_rp
     ksp_mon = this%M%solve(this%Ax, this%temp_field, r, n, this%coef, this%bclst, this%gs_h, this%inner_iter)
     z_d = device_get_ptr(z)
-    r_d = device_get_ptr(r)
 
-    write(*,*) ksp_mon%iter, &
-         ksp_mon%res_start, &
-         ksp_mon%res_final
+    !write(*,*) ksp_mon%iter, &
+    !     ksp_mon%res_start, &
+    !     ksp_mon%res_final
 
 
     call device_copy(z_d,this%temp_field%x_d,n)
-    ! call device_copy(this%temp_field%x_d, z_d, n)
   end subroutine device_inexact_solve
 
 !> Init
@@ -77,12 +73,8 @@ contains
     integer, intent(in) :: inner_iter
 
     call this%free()
-    ! Is this correct?
     call this%temp_field%init(dof)
     this%inner_iter = inner_iter
-    !!emp_field = 0.0_rp
-
-    !this%temp_field => temp_field
     this%Ax => Ax
     this%M => M
     this%gs_h => gs_h
