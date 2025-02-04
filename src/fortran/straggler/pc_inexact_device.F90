@@ -4,10 +4,10 @@
 
 ! Example usage
 ! call krylov_solver_factory(solver_pc, dm%size(), 'cheby', niter, abstol)
-! allocate(device_inexact_t::pc)
+! allocate(device_inexact_pc_t::pc)
 ! 
 ! select type (pc => pc)
-! type is (device_inexact_t)
+! type is (device_inexact_pc_t)
 ! call pc%init(ax_helm, solver_pc, 10, coef, dm, gs_h, bclst)
 ! end select
 !
@@ -15,25 +15,23 @@
 !> Krylov preconditioner (using Krylov solver)
 module device_inexact_pc
   use neko
-
-  !use math, only : copy
-  !use precon, only : pc_t
-  !use coefs, only : coef_t
-  !use num_types, only : c_rp, rp
-  !use, intrinsic :: iso_c_binding , only : c_ptr, c_int
-  !use field, only : field_t
-  !use ax, only : ax_t
-  !use dofmap
-  !use gather_scatter
-  !use krylov
-  !use device, only : device_get_ptr
-  !use 
-  !use bc_list !, only : bc_list_t
+  use math, only : copy
+  use precon, only : pc_t
+  use coefs, only : coef_t
+  use num_types, only : c_rp, rp
+  use, intrinsic :: iso_c_binding , only : c_ptr, c_int
+  use field, only : field_t
+  use ax_product, only : ax_t
+  use dofmap
+  use gather_scatter
+  use krylov
+  use device, only : device_get_ptr
+  !use bc_list , only : bc_list_t
   implicit none
   private
 
   !> Defines the inexact preconditioner
-  type, public, extends(pc_t) :: device_inexact_t
+  type, public, extends(pc_t) :: device_inexact_pc_t
     type(gs_t), pointer :: gs_h
     type(dofmap_t), pointer :: dof
     type(coef_t), pointer :: coef
@@ -47,13 +45,13 @@ module device_inexact_pc
       procedure, pass(this) :: solve => device_inexact_solve
       procedure, pass(this) :: update => device_inexact_update
       procedure, pass(this) :: free => device_inexact_free
-  end type device_inexact_t
+  end type device_inexact_pc_t
 
 contains
 
 !> The preconditioner \f$ M z = r \f$ solved with some inexact solver
   subroutine device_inexact_solve(this, z, r, n)
-    class(device_inexact_t), intent(inout) :: this
+    class(device_inexact_pc_t), intent(inout) :: this
     integer, intent(in) :: n
     real(kind=rp), dimension(n), intent(inout) :: z
     real(kind=rp), dimension(n), intent(inout) :: r
@@ -73,7 +71,7 @@ contains
 
 !> Init
   subroutine device_inexact_init(this, Ax, M, inner_iter, coef, dof, gs_h, bclst)
-    class(device_inexact_t), intent(inout) :: this
+    class(device_inexact_pc_t), intent(inout) :: this
     class(ax_t), intent(in), target :: Ax
     class(ksp_t), intent(in), target :: M
     type(gs_t), intent(in), target :: gs_h
@@ -99,7 +97,7 @@ contains
 !> Mandatory update routine
 !! Should probably update BCs, tolerance etc.
   subroutine device_inexact_update(this)
-    class(device_inexact_t), intent(inout) :: this
+    class(device_inexact_pc_t), intent(inout) :: this
   ! this%grids(1)%coef%ifh2 = .false.
   !  call copy(this%grids(1)%coef%h1, this%grids(3)%coef%h1, &
   !       this%grids(1)%dof%size())
@@ -110,7 +108,7 @@ contains
   end subroutine device_inexact_update
 
   subroutine device_inexact_free(this)
-    class(device_inexact_t), intent(inout) :: this
+    class(device_inexact_pc_t), intent(inout) :: this
 
     nullify(this%dof)
     nullify(this%gs_h)
