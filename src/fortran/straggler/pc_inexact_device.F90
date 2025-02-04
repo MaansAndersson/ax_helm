@@ -1,5 +1,5 @@
 !> Module for reusing linear solvers as preconditioner.
-!!
+!! Do we really need a seprate device module? Could be solved with a if BCKND else. 
 !! Used with FMGRES or BiCGSTAB.
 
 !> Krylov preconditioner (using Krylov solver)
@@ -56,13 +56,8 @@ contains
     this%temp_field%x = 0.0_rp
     ksp_mon = this%M%solve(ax_helm, this%temp_field, r, n, this%coef, this%bclst, this%gs_h, 100)
 
-    ! device it?
-    ! probably split it
-    call copy(z, this%temp_field%x, n)
-
-    !if (NEKO_BCKND_DEVICE .eq. 1) then
-    !  z_d = device_get_ptr(z)
-    !  call device_copy(z_d, this%temp_field%x_d, n)
+    z_d = device_get_ptr(z)
+    call device_copy(z_d, this%temp_field%x_d, n)
     !else
     !  call copy(z, this%temp_field%x, n)
     !end if
