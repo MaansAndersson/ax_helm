@@ -2,6 +2,16 @@
 !! Do we really need a seprate device module? Could be solved with a if BCKND else. 
 !! Used with FMGRES or BiCGSTAB.
 
+! Example usage
+! call krylov_solver_factory(solver_pc, dm%size(), 'cheby', niter, abstol)
+! allocate(device_inexact_t::pc)
+! 
+! select type (pc => pc)
+! type is (device_inexact_t)
+! call pc%init(ax_helm, solver_pc, 10, coef, dm, gs_h, bclst)
+! end select
+!
+
 !> Krylov preconditioner (using Krylov solver)
 module device_inexact_pc
   use neko
