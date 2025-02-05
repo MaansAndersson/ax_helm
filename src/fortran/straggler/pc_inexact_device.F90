@@ -61,9 +61,9 @@ contains
     ksp_mon = this%M%solve(this%Ax, this%temp_field, r, n, this%coef, this%bclst, this%gs_h, this%inner_iter)
     z_d = device_get_ptr(z)
 
-    !write(*,*) ksp_mon%iter, &
-    !     ksp_mon%res_start, &
-    !     ksp_mon%res_final
+    write(*,*) ksp_mon%iter, &
+         ksp_mon%res_start, &
+         ksp_mon%res_final
 
 
     call device_copy(z_d,this%temp_field%x_d,n)
