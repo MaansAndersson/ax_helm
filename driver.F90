@@ -103,14 +103,14 @@ program nekobench
   
   !Init things
   call Xh%init(GLL, lx, lx, lx)
-  dm = dofmap_t(msh,Xh)
+  call dm%init(msh,Xh)
   call gs_h%init(dm)
   call f1%init(dm)
   call f2%init(dm)
   call f3%init(dm)
   call f4%init(dm)
   call coef%init(gs_h)
-  call ax_helm_factory(ax_helm)
+  call ax_helm_factory(ax_helm, .FALSE.)
   
   allocate(dace_ax_helm)
 
@@ -254,15 +254,14 @@ program nekobench
   end if
   !example us of cg solver
   !init bcs...
-  call dir_bc%init(coef) !dm)
-  call dir_bc%set_g(real(0.0d0,rp))
+  call dir_bc%init_from_components(coef,real(0.0d0,rp))
 
   !user specified
   call set_bc(dir_bc, msh)
 
   call dir_bc%finalize()
-  call bc_list_init(bclst)
-  call bc_list_add(bclst,dir_bc)
+  call bclst%init()
+  call bclst%append(dir_bc)
 
   f2 = 1.0_rp
 

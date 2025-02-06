@@ -21,8 +21,7 @@ sdfg:
 	$(SDFGCC) ../sdfg/ax_6.sdfg.gz -o .
 	$(SDFGCC) ../sdfg/ax_7.sdfg.gz -o .
 	$(SDFGCC) ../sdfg/ax_8.sdfg.gz -o .
-	$(SDFGCC) ../sdfg/math.sdfg -o .
-	#$(SDFGCC) ../sdfg/add3s2.sdfg.gz -o .
+	$(SDFGCC) ../sdfg/add3s2.sdfg.gz -o .
 	mv *so $(LDIR)
 	mv *h $(IDIR)
 

@@ -26,7 +26,7 @@ all: sdfg slib $(DEST)
 
 mv_obj: $(OBJ)
 	mv *dace*.o ${SRC_PATH}/wrapper
-	mv *inexact_pc*.o ${SRC_PATH}/straggler
+	mv *pc_inexact*.o ${SRC_PATH}/straggler
 
 mod:
 	-rm -f *.mod
