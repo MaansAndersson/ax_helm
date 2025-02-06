@@ -49,7 +49,7 @@ module dace_ax_helm_device
   type, abstract, extends(ax_t) :: dace_ax_t
    contains
      procedure, nopass :: compute => dace_ax_helm_device_compute
-  !   procedure, pass(this) :: compute_vector => ax_helm_device_compute_vector
+     procedure, pass(this) :: compute_vector => ax_helm_device_compute_vector
   !   procedure, nopass :: init => dace_ax_helm_device_init
   !   procedure, nopass :: free => dace_ax_helm_device_free
   end type dace_ax_t
@@ -104,4 +104,20 @@ contains
     call dace_ax_helm_device_delete(handle)
   end subroutine
 
+  subroutine ax_helm_device_compute_vector(this, au, av, aw, u, v, w, coef, msh, Xh)
+    class(dace_ax_t), intent(in) :: this
+    type(space_t), intent(inout) :: Xh
+    type(mesh_t), intent(inout) :: msh
+    type(coef_t), intent(inout) :: coef
+    real(kind=rp), intent(inout) :: au(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
+    real(kind=rp), intent(inout) :: av(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
+    real(kind=rp), intent(inout) :: aw(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
+    real(kind=rp), intent(inout) :: u(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
+    real(kind=rp), intent(inout) :: v(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
+    real(kind=rp), intent(inout) :: w(Xh%lx, Xh%ly, Xh%lz, msh%nelv)
+
+    call this%compute(au, u, coef, msh, Xh)
+    call this%compute(av, v, coef, msh, Xh)
+    call this%compute(aw, w, coef, msh, Xh)
+  end subroutine
 end module dace_ax_helm_device
