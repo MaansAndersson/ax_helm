@@ -56,6 +56,8 @@ program nekobench
   use setup
   use dace_math
   use dace_ax_helm_device
+  use device_inexact_pc
+  use inexact_pc
 
   implicit none
 
@@ -74,12 +76,14 @@ program nekobench
   type(ksp_monitor_t) :: ksp_mon
   type(dirichlet_t) :: dir_bc
   type(bc_list_t) :: bclst
-  integer :: argc, niter, ierr, lx, nelt, bcknd 
+  integer :: argc, niter, ierr, lx, nelt, bcknd
   integer :: i, n
-    
+  ! Inexact preconditioner
+  class(ksp_t), allocatable :: solver_pc
+  class(inexact_pc_t), allocatable :: pc
+
+
   ! Dace
-  class(dace_ax_helm_device_t), allocatable :: dace_ax_helm
-  !type(c_ptr) :: handle_add3s2
   argc = command_argument_count()
 
   if ((argc .lt. 4) .or. (argc .gt. 4)) then
@@ -88,19 +92,19 @@ program nekobench
      stop
   end if
 
-  call neko_init 
-  
+  call neko_init
+
   call get_command_argument(1, fname)
   call get_command_argument(2, lxchar)
   read(lxchar, *) lx
   call get_command_argument(3, lxchar)
   read(lxchar, *) niter
-  call get_command_argument(4, lxchar) 
-  read(lxchar, *) bcknd 
+  call get_command_argument(4, lxchar)
+  read(lxchar, *) bcknd
 
   nmsh_file = file_t(fname)
-  call nmsh_file%read(msh) 
-  
+  call nmsh_file%read(msh)
+
   !Init things
   call Xh%init(GLL, lx, lx, lx)
   call dm%init(msh,Xh)
@@ -110,12 +114,7 @@ program nekobench
   call f3%init(dm)
   call f4%init(dm)
   call coef%init(gs_h)
-  call ax_helm_factory(ax_helm, .FALSE.)
-  
-  allocate(dace_ax_helm)
 
-  abstol = 1e-12 ! Something small so we dont converge
-  call krylov_solver_factory(solver, dm%size(), 'cg', niter, abstol)
   n_tot = dble(msh%glb_nelv)*dble(niter)*dble(Xh%lxyz) 
   n = dm%size()
   if (pe_rank .eq. 0) then
@@ -132,126 +131,18 @@ program nekobench
   f1 = 1.0_rp
   f2 = 1.0_rp
   f3 = 1.0_rp
-  
-  !Benchmark copy speed f1 = f2
-  call device_sync()
-  t0 = MPI_Wtime()
-  do i = 1, niter
-     if (NEKO_BCKND_DEVICE .eq. 1) then
-        call device_copy(f1%x_d,f2%x_d,dm%size())
-    else
-        call copy(f1%x,f2%x,dm%size())
-     end if
-  end do
-  call device_sync()
-  t1 = MPI_Wtime()
-
-  time = t1 - t0
-  !Assume double precision
-  byte = n_tot*2d0*8d0*1e-9
-  if (pe_rank .eq. 0) then
-     write(*,*) 'copy Time:',time
-     write(*,*) 'copy GByte:',byte
-     write(*,*) 'copy GB/s:', byte/time
-  end if
-
-  f1 = 1.0_rp
-  f2 = 1.0_rp
-  f3 = 1.0_rp
-  c1 = 2.0_rp
-  c2 = 3.0_rp
-  
-  call dace_add3s2_init(dm%size())
-  
-  !Benchmark vector add f1 = c1*f2 + c2*f3
-  call device_sync()
-  call MPI_Barrier(NEKO_COMM, ierr)
-  t0 = MPI_Wtime()
-  do i = 1, niter
-     if (NEKO_BCKND_DEVICE .eq. 1) then
-        if (bcknd .eq. 0) then
-          call dace_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
-          !call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
-          !if (i .eq. 1) print *, niter*0.25*device_glsc2(f1%x_d,f1%x_d,dm%size())
-        else 
-          call device_add3s2(f1%x_d,f2%x_d,f3%x_d,c1,c2,dm%size())
-        end if
-    else
-        call add3s2(f1%x,f2%x,f3%x,c1,c2,dm%size())
-     end if
-  end do
-  call device_sync()
-  t1 = MPI_Wtime()
-  
-  call device_sync()
-  if (NEKO_BCKND_DEVICE .eq. 1) then
-     print *, "norm of ||add3s2 f2||, L2 norm squared", device_glsc2(f1%x_d,f1%x_d,n)
-  else
-     print *, "norm of ||add3s2 f2||, L2 norm squared", glsc2(f1%x,f1%x,n)
-  end if
-
-  time = t1 - t0
-  !Assume double precision
-  flop = 3d0*n_tot*1e-9
-  byte = n_tot*3d0*8d0*1e-9
-  if (pe_rank .eq. 0) then
-     write(*,*) 'add3s2 Time:',time
-     write(*,*) 'add3s2 GFlop:', flop
-     write(*,*) 'add3s2 GByte:',byte
-     write(*,*) 'add3s2 Gflop/s:', flop/time
-     write(*,*) 'add3s2 GB/s:', byte/time
-  end if
 
   call device_sync()
 
-  call dace_ax_helm_device_init(Xh%lx, msh%nelv)
-  call device_sync()
   call set_f(f1%x,f1%dof)
   if(NEKO_BCKND_DEVICE .eq. 1) call device_memcpy(f1%x, f1%x_d, n, HOST_TO_DEVICE,sync=.true.) 
   call device_sync()
 
-  !Benchmark Ax, lets not overengineer this...
-  ! To not time the autotune...
-  if (bcknd .eq. 0) then
-     print *, " "
-     print *, "---No tuning---"
-     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
-  else
-     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
-  end if
-
-  call device_sync()
-  if (NEKO_BCKND_DEVICE .eq. 1) then
-     print *, "norm of ||A*f||, L2 norm squared", device_glsc2(f2%x_d,f2%x_d,n)
-  else
-     print *, "norm of ||A*f||, L2 norm squared", glsc2(f2%x,f2%x,n)
-  end if
-
   call MPI_Barrier(NEKO_COMM, ierr)
   t0 = MPI_Wtime()
-  !h1, h2 are initialized to something
-  do i = 1, niter
-  if (bcknd .eq. 0) then
-     call dace_ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
-  else
-     call ax_helm%compute(f2%x, f1%x, coef, msh, Xh)
-  end if
-
-  end do
-  call device_sync()
   t1 = MPI_Wtime()
-
   time = t1 - t0
-  flop = (19d0 + 12d0*Xh%lx)*n_tot*1e-9
-  !Assume double precision
-  byte = n_tot*8d0*8d0*1e-9
-  if (pe_rank .eq. 0) then
-     write(*,*) 'Ax_helm Time:',time
-     write(*,*) 'Ax_helm GFlop:', flop
-     write(*,*) 'Ax_helm GByte:',byte
-     write(*,*) 'Ax_helm Gflop/s:', flop/time
-     write(*,*) 'Ax_helm GB/s:', byte/time
-  end if
+
   !example us of cg solver
   !init bcs...
   call dir_bc%init_from_components(coef,real(0.0d0,rp))
@@ -263,13 +154,31 @@ program nekobench
   call bclst%init()
   call bclst%append(dir_bc)
 
+  abstol = 1e-16
+
+  call ax_helm_factory(ax_helm, .FALSE.)
+  call krylov_solver_factory(solver_pc, dm%size(), 'gmres', niter, abstol)
+  !allocate(device_inexact_pc_t::pc)
+  allocate(inexact_pc_t::pc)
+  select type (pc => pc)
+  ! change gs_h such that it is a gs that times out for small ts
+  !type is (device_inexact_pc_t)
+  !  call pc%init(ax_helm, solver_pc, 15, coef, dm, gs_h, bclst)
+  type is (inexact_pc_t)
+    call pc%init(ax_helm, solver_pc, 15, coef, dm, gs_h, bclst)
+  end select
+
+  abstol = 1e-14! Something small so we dont converge
+  call krylov_solver_factory(solver, dm%size(), 'gmres', niter, abstol, pc)
+
+
   f2 = 1.0_rp
 
-  if (bcknd .eq. 0) then
-  ksp_mon = solver%solve(dace_ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
-  else
+  !if (bcknd .eq. 0) then
+  !ksp_mon = solver%solve(dace_ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
+  !else
   ksp_mon = solver%solve(ax_helm, f2, f1%x, dm%size(), coef, bclst, gs_h, niter)
-  end if
+  !end if
 
   write(*,*) ksp_mon%iter, &
          ksp_mon%res_start, &

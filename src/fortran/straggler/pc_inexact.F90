@@ -4,8 +4,9 @@
 
 !> Krylov preconditioner (using Krylov solver)
 module inexact_pc
-  use neko !bug with bc_list_t??
+  use neko_config, only : NEKO_BCKND_DEVICE
   use math, only : copy
+  use device_math, only : device_copy
   use precon, only : pc_t
   use coefs, only : coef_t
   use num_types, only : c_rp, rp
@@ -16,7 +17,7 @@ module inexact_pc
   use gather_scatter
   use krylov
   use device, only : device_get_ptr
-  !use bc_list , only : bc_list_t
+  use bc_list , only : bc_list_t
 
   implicit none
   private

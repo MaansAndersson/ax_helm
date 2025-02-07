@@ -5,12 +5,15 @@ FCLAGS  = `pkg-config --cflags neko`
 LIBS    = `pkg-config --libs neko`
 FC      = `pkg-config --variable=compiler neko`
 
+DRIVER  = driver_test.F90
+
 DEST    = nekobench
 SRC     = ${SRC_PATH}/wrapper/dace_ax.F90 \
           ${SRC_PATH}/wrapper/dace_math.F90\
           ${SRC_PATH}/wrapper/dace_ax_helm_device.F90\
 					${SRC_PATH}/straggler/pc_inexact.F90 \
-					driver.F90\
+					${SRC_PATH}/straggler/pc_inexact_device.F90 \
+					${DRIVER}
 
 OBJ     = ${SRC:.F90=.o}
 
