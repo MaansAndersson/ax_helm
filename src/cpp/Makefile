@@ -1,14 +1,12 @@
 IDIR=include
 DACE_DIR=-I ${DACE_PATH}/include
-CXX=clang++
+CXX=CC
 SDFGCC=sdfgcc
 
 LDIR=lib
 LIBS=-lm -lax2 -lax3 -lax4 -lax5 -lax6 -lax7 -lax8 -ladd3s2
 
-all:
-	sdfg
-	slib
+all: sdfg slib
 
 slib:
 	$(CXX) -shared -O3 ax.cpp ${LIBS} -I ${IDIR} ${DACE_DIR} -L ${LDIR} -o ${LDIR}/libax.so
@@ -29,4 +27,4 @@ sdfg:
 .PHONY: clean
 
 clean:
-	rm -f $(LDIR)/*.so
+	rm -rf $(LDIR)/*.so .dacecache/ 
