@@ -1,7 +1,6 @@
 #!/bin/bash
 
-export DACE_PATH=$PWD/submodules/dace/dace/runtime/ # /home/mansande/Develop/scivenv/lib/python3.12/site-packages/dace/runtime/
-export DACE_compiler_cpu_executable=/local/spack/linux-centos8-zen/gcc-8.5.0/gcc-11.3.0-lsrw3b6dbtevo63ogo6xhqdwcofcliio/bin/g++ #usr/bin/clang++
+export DACE_PATH=$PWD/submodules/dace/dace/runtime/ 
 
 #set up neko and dep.
 NEKO_PATH=submodules/neko/install_neko
