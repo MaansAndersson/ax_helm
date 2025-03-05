@@ -1,5 +1,9 @@
-module setup
-  use neko
+module setup_driver
+  use num_types, only : rp
+  use dofmap, only : dofmap_t
+  use mesh, only : mesh_t
+  use utils, only : nonlinear_index
+  use dirichlet, only : dirichlet_t
   implicit none
 contains
   ! Setup rhs
@@ -48,12 +52,12 @@ contains
     enddo
   end subroutine set_bc
 
-end module setup
+end module setup_driver
 
 
 program nekobench
   use neko
-  use setup
+  use setup_driver
   use dace_math
   use dace_ax_helm_device
   use device_inexact_pc
