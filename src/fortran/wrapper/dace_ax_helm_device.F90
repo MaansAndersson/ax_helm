@@ -31,20 +31,21 @@
 !
 module dace_ax_helm_device
 !  use num_types
-  use coefs
-  use device
-  use space
-  use field
-  use mesh
+  use coefs, only : coef_t
+  use space, only : space_t
+  use mesh, only : mesh_t
+  use field, only : field_t
   use ax_product, only : ax_t
   use device_math, only : device_addcol4
   use device, only : device_get_ptr
-  use num_types, only : rp, c_rp
-  use, intrinsic :: iso_c_binding, only : c_ptr, c_int
+  use opencl_intf !!!! Why is this
+  use num_types, only : rp, c_rp, i8
+  use, intrinsic :: iso_c_binding, only : c_ptr, c_int, C_NULL_PTR
   use axmod
 
   implicit none
-  type(c_ptr) :: handle
+  ! Why is this problematic?
+  type(c_ptr), bind(c) :: handle = C_NULL_PTR
 
   type, abstract, extends(ax_t) :: dace_ax_t
    contains
